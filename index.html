@@ -162,6 +162,8 @@
     th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid #eae8e4; }
     th { color: var(--cinza); font-size: 11px; text-transform: uppercase; }
     .nota-grande { font-size: 46px; font-weight: 800; color: var(--marca-escura); text-align: center; }
+    .nota-grande.nota-boa { color: var(--verde); }
+    .nota-grande.nota-ruim { color: var(--alerta); }
     .abas { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
     .aba-btn { background: var(--cinza-claro); border: 1px solid #d8d6d2; padding: 7px 12px; border-radius: 20px; font-size: 12px; }
     .aba-btn.ativa { background: var(--marca); color: var(--preto); border-color: var(--marca); font-weight: 700; }
@@ -1320,7 +1322,7 @@
 
   function mostrarRelatorio(rel) {
     var html = '';
-    html += '<div class="nota-grande">' + Number(rel.nota).toFixed(2) + ' / 10</div>';
+    html += '<div class="nota-grande ' + (Number(rel.nota) >= 6 ? 'nota-boa' : 'nota-ruim') + '">' + Number(rel.nota).toFixed(2) + ' / 10</div>';
     html += '<p style="text-align:center;font-size:13px;color:var(--cinza)">Resultado: <strong>' + rel.resultado + '</strong> · Perfil: <span class="tipo-badge tipo-' + rel.tipoTentante + '">' + rel.tipoTentante + '</span></p>';
 
     html += '<h3>Ficha revelada do caso</h3>';
