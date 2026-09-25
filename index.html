@@ -1,0 +1,1338 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TSE — Treinamento Sucessores de Élpis</title>
+  <style>
+    :root {
+      --marca: #c9a227;
+      --marca-escura: #96781c;
+      --preto: #121212;
+      --dourado: #d8bd7a;
+      --cinza: #4a4d52;
+      --cinza-claro: #f4f3f1;
+      --branco: #ffffff;
+      --verde: #2e7d4f;
+      --verde-fundo: #e7f4ec;
+      --alerta: #a3202c;
+      --alerta-fundo: #fbe8e9;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    input[type=checkbox] { accent-color: var(--marca); }
+    body {
+      margin: 0;
+      background: var(--cinza-claro);
+      color: var(--preto);
+    }
+    header {
+      background: linear-gradient(135deg, #0a0a0a, var(--preto) 60%, var(--marca-escura));
+      border-bottom: 3px solid var(--marca);
+      color: var(--branco);
+      padding: 18px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 20px;
+      letter-spacing: 0.5px;
+    }
+    header h1 span { color: var(--dourado); }
+    header .subtitulo { font-size: 12px; opacity: 0.85; margin-top: 2px; }
+    header .contador {
+      font-size: 12px;
+      background: rgba(255,255,255,0.12);
+      padding: 6px 12px;
+      border-radius: 20px;
+    }
+    main {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 20px 16px 60px;
+    }
+    .cartao {
+      background: var(--branco);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 16px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+    }
+    h2 { margin-top: 0; font-size: 17px; }
+    h3 { font-size: 14px; color: var(--marca-escura); }
+    label { display: block; font-size: 13px; font-weight: 600; margin: 10px 0 4px; }
+    input[type=text], input[type=email], textarea, select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #d8d6d2;
+      border-radius: 8px;
+      font-size: 14px;
+      font-family: inherit;
+    }
+    textarea { resize: vertical; }
+    button {
+      cursor: pointer;
+      border: none;
+      border-radius: 8px;
+      padding: 11px 16px;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: inherit;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+    }
+    .btn-primario { background: var(--marca); color: var(--preto); }
+    .btn-primario:hover { background: var(--marca-escura); color: var(--branco); }
+    .btn-secundario { background: var(--cinza-claro); color: var(--preto); border: 1px solid #d8d6d2; }
+    .btn-secundario:hover { background: #ebe9e5; }
+    .btn-perigo { background: #7a1c1c; color: var(--branco); }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .linha-botoes { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+    .escondido { display: none !important; }
+    .aviso { background: #fff4e5; border: 1px solid #f0c987; padding: 10px 12px; border-radius: 8px; font-size: 13px; margin-bottom: 10px; }
+    .erro { background: var(--alerta-fundo); border: 1px solid #e6b3b6; color: #7a1c1c; padding: 10px 12px; border-radius: 8px; font-size: 13px; margin-top: 10px; }
+    .termo-texto { max-height: 260px; overflow-y: auto; border: 1px solid #e2e0dc; border-radius: 8px; padding: 12px; font-size: 13px; line-height: 1.5; background: #fafaf8; }
+    .checkbox-linha { display: flex; align-items: flex-start; gap: 8px; margin-top: 12px; font-size: 13px; }
+    .checkbox-linha input { margin-top: 3px; }
+    .stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 12px 0; }
+    .stat { background: var(--cinza-claro); border-radius: 8px; padding: 10px 12px; text-align: center; }
+    .stat .num { font-size: 22px; font-weight: 700; color: var(--marca-escura); }
+    .stat .lbl { font-size: 11px; color: var(--cinza); }
+    .tipo-badge { display: inline-block; padding: 3px 9px; border-radius: 20px; font-size: 11px; font-weight: 700; text-transform: uppercase; }
+    .tipo-agressivo { background: #fde3e3; color: #a3202c; }
+    .tipo-depressivo { background: #e3e9fd; color: #26408f; }
+    .tipo-psicotico { background: #f0e3fd; color: #6a2fa3; }
+    .chat-log { display: flex; flex-direction: column; gap: 10px; max-height: 50vh; overflow-y: auto; padding: 4px 2px; margin-bottom: 12px; }
+    .imagem-cena { width: 100%; max-height: 260px; object-fit: cover; border-radius: 10px; margin-bottom: 4px; }
+    .imagens-duplas { display: flex; gap: 8px; margin-bottom: 4px; }
+    .imagens-duplas .imagem-cena { flex: 1 1 60%; margin-bottom: 0; max-height: 220px; }
+    .imagens-duplas .imagem-personagem { flex: 1 1 40%; margin-bottom: 0; max-height: 220px; width: auto; object-fit: cover; border-radius: 10px; }
+    .cronometro { display: flex; align-items: center; justify-content: center; gap: 8px; font-size: 13px; color: var(--cinza); margin-bottom: 10px; }
+    .cronometro .tempo { font-variant-numeric: tabular-nums; font-weight: 700; font-size: 15px; color: var(--marca-escura); }
+    .cronometro.dentro-da-meta .tempo { color: #2a7a3d; }
+    .cronometro.acima-da-meta .tempo { color: #a3202c; }
+    .status-conversa { text-align: center; padding: 36px 16px; margin-bottom: 12px; background: var(--cinza-claro); border-radius: 12px; }
+    .status-icone { font-size: 46px; margin-bottom: 10px; }
+    .status-icone.falando { animation: pulsar 1s infinite; }
+    .status-texto { font-size: 15px; font-weight: 600; color: var(--cinza); }
+    .status-conversa.status-sucesso { background: var(--verde-fundo); border: 2px solid var(--verde); }
+    .status-conversa.status-sucesso .status-texto { color: var(--verde); font-size: 19px; font-weight: 800; }
+    .status-conversa.status-falha { background: var(--alerta-fundo); border: 2px solid var(--alerta); }
+    .status-conversa.status-falha .status-texto { color: #7a1c1c; font-size: 19px; font-weight: 800; }
+    .bolha { max-width: 85%; padding: 10px 13px; border-radius: 12px; font-size: 14px; line-height: 1.4; white-space: pre-wrap; }
+    .bolha-sistema { align-self: center; background: var(--preto); color: var(--branco); font-size: 12px; text-align: center; max-width: 100%; }
+    .bolha-tentante { align-self: flex-start; background: #eceae6; border-bottom-left-radius: 2px; }
+    .bolha-aluno { align-self: flex-end; background: var(--preto); color: var(--marca); border-bottom-right-radius: 2px; }
+    .bolha-fim-positivo { align-self: center; background: var(--verde-fundo); color: var(--verde); font-weight: 700; text-align: center; max-width: 100%; border: 1px solid #b8dfc6; }
+    .bolha-fim-negativo { align-self: center; background: var(--alerta-fundo); color: #7a1c1c; font-weight: 700; text-align: center; max-width: 100%; border: 1px solid #e6b3b6; }
+    .entrada-chat { display: flex; gap: 8px; }
+    .entrada-chat textarea { flex: 1; min-height: 44px; }
+    #btnVoltarAudio { flex: 0 0 auto; font-size: 18px; padding: 0 14px; }
+    .entrada-audio { display: flex; gap: 8px; align-items: stretch; margin-bottom: 8px; }
+    .barra-gravar {
+      flex: 1;
+      min-height: 62px;
+      background: var(--cinza-claro);
+      border: 2px solid #d8d6d2;
+      border-radius: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 15px;
+      color: var(--cinza);
+      touch-action: none;
+      -webkit-user-select: none;
+      user-select: none;
+      -webkit-touch-callout: none;
+    }
+    .barra-gravar .barra-icone { font-size: 22px; }
+    .barra-gravar.gravando { background: var(--marca); color: var(--preto); border-color: var(--marca-escura); }
+    .barra-gravar.cancelando { background: var(--alerta); color: var(--branco); border-color: #7a1c1c; }
+    .barra-gravar.indisponivel, .barra-gravar.travada { opacity: 0.55; }
+    #btnDigitar { flex: 0 0 auto; font-size: 20px; padding: 0 16px; }
+    @keyframes pulsar { 0%,100%{opacity:1;} 50%{opacity:0.6;} }
+    table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
+    th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid #eae8e4; }
+    th { color: var(--cinza); font-size: 11px; text-transform: uppercase; }
+    .nota-grande { font-size: 46px; font-weight: 800; color: var(--marca-escura); text-align: center; }
+    .abas { display: flex; gap: 6px; margin-bottom: 12px; flex-wrap: wrap; }
+    .aba-btn { background: var(--cinza-claro); border: 1px solid #d8d6d2; padding: 7px 12px; border-radius: 20px; font-size: 12px; }
+    .aba-btn.ativa { background: var(--marca); color: var(--preto); border-color: var(--marca); font-weight: 700; }
+    .carregando { text-align: center; padding: 30px; color: var(--cinza); font-size: 13px; }
+    .item-verdict { display: flex; justify-content: space-between; font-size: 12px; padding: 4px 0; border-bottom: 1px dashed #eee; }
+    .pontos-pos { color: var(--verde); font-weight: 700; }
+    .pontos-neg { color: #a3202c; font-weight: 700; }
+    .pontos-zero { color: var(--cinza); }
+    .lista-liberados-item, .lista-casos-item { border: 1px solid #eae8e4; border-radius: 8px; padding: 10px; margin-bottom: 8px; font-size: 13px; }
+    .lista-liberados-item .topo, .lista-casos-item .topo { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .rodape-nota { font-size: 11px; color: var(--cinza); margin-top: 30px; text-align: center; }
+  </style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>TSE — <span>Treinamento Sucessores de Élpis</span></h1>
+    <div class="subtitulo">Simulador de Abordagem Técnica a Tentativa de Suicídio · CATTS 2026 · CBMERJ</div>
+  </div>
+  <div class="contador" id="contadorGlobal">carregando contador…</div>
+</header>
+
+<main>
+
+  <!-- TELA: LOGIN -->
+  <section id="tela-login" class="cartao">
+    <img src="emblema-curso.png" alt="Emblema do Curso de Abordagem Técnica à Tentativa de Suicídio — CATTS I/2026" style="display:block;width:120px;height:120px;margin:0 auto 12px">
+    <h2>Entrar</h2>
+    <p style="font-size:13px;color:var(--cinza)">Acesso restrito aos alunos liberados individualmente pelo instrutor. Se seu e-mail ainda não foi liberado, solicite ao instrutor do curso.</p>
+    <label>Nome completo</label>
+    <input type="text" id="loginNome" placeholder="Seu nome">
+    <label>Matrícula (opcional)</label>
+    <input type="text" id="loginMatricula" placeholder="Sua matrícula/RE">
+    <label>Digite um e-mail autorizado</label>
+    <input type="email" id="loginEmail" placeholder="seuemail@exemplo.com">
+    <div class="linha-botoes">
+      <button class="btn-primario" onclick="tentarEntrar()">Entrar</button>
+    </div>
+    <div id="loginErro"></div>
+  </section>
+
+  <!-- TELA: TERMO DE CONSENTIMENTO -->
+  <section id="tela-termo" class="cartao escondido">
+    <h2>Termo de Consentimento e Responsabilidade</h2>
+    <div class="termo-texto">
+      <p><strong>1. Natureza da ferramenta.</strong> O TSE — Treinamento Sucessores de Élpis é um exercício fictício de treino de comunicação para a Abordagem Técnica a Tentativa de Suicídio (CATTS 2026, CBMERJ). As ocorrências, personagens e diálogos são inteiramente gerados por inteligência artificial para fins didáticos. Esta ferramenta NÃO é doutrina oficial, NÃO substitui instrutores, protocolos operacionais vigentes, supervisão presencial, atendimento clínico ou psiquiátrico, e a nota exibida é uma estimativa didática, não a nota oficial do curso.</p>
+      <p><strong>2. Conteúdo sensível.</strong> O tema tratado é grave e pode ser emocionalmente desgastante. Se em algum momento você sentir sofrimento genuíno (não relacionado ao personagem fictício), interrompa o uso e procure apoio — Centro de Valorização da Vida (CVV): 188, ligação e chat gratuitos, 24h, cvv.org.br.</p>
+      <p><strong>3. Confidencialidade e uso restrito.</strong> O acesso a esta ferramenta é pessoal e intransferível, liberado individualmente pelo instrutor. Ao aceitar este termo, você concorda em:</p>
+      <ul>
+        <li>Não compartilhar seu acesso, link ou credenciais com terceiros;</li>
+        <li>Não divulgar, reproduzir ou distribuir esta ferramenta, seu conteúdo ou seus materiais de apoio sem autorização expressa do instrutor;</li>
+        <li>Utilizar a ferramenta exclusivamente para fins de treino pessoal no âmbito do curso CATTS 2026.</li>
+      </ul>
+      <p><strong>4. Dados armazenados.</strong> Nome, matrícula, e-mail e o histórico de notas/resultados de suas simulações são armazenados para fins de acompanhamento pedagógico do curso e cálculo de ranking. O descumprimento deste termo pode levar à revogação do seu acesso.</p>
+      <p><strong>5. Microfone.</strong> Esta ferramenta pede acesso ao microfone do seu aparelho para você poder falar com o tentante em voz, como num treino real. O áudio é enviado ao servidor só para transcrição/resposta da simulação e não é usado para nenhum outro fim.</p>
+    </div>
+    <div class="checkbox-linha">
+      <input type="checkbox" id="termoAceite">
+      <label for="termoAceite" style="margin:0;font-weight:400">Li e concordo com os termos acima.</label>
+    </div>
+    <div class="linha-botoes">
+      <button class="btn-primario" id="btnAceitarTermo" disabled onclick="aceitarTermo()">Aceitar e continuar</button>
+    </div>
+  </section>
+
+  <!-- TELA: MENU -->
+  <section id="tela-menu" class="cartao escondido">
+    <h2>Olá, <span id="menuNome"></span></h2>
+    <div class="stat-grid">
+      <div class="stat"><div class="num" id="menuTotalAbordagens">0</div><div class="lbl">suas abordagens</div></div>
+      <div class="stat"><div class="num" id="menuMelhorNota">—</div><div class="lbl">sua melhor nota</div></div>
+    </div>
+    <div class="linha-botoes">
+      <button class="btn-primario" onclick="mostrarTela('tela-dificuldade')">Nova Abordagem</button>
+      <button class="btn-secundario" onclick="abrirRanking()">Ranking</button>
+      <button class="btn-secundario escondido" id="btnPainelAdmin" onclick="abrirAdmin()">Painel do Instrutor</button>
+    </div>
+    <div class="linha-botoes">
+      <button class="btn-secundario" onclick="sair()">Sair</button>
+    </div>
+    <h3 style="margin-top:24px">Suas últimas abordagens</h3>
+    <p style="font-size:12px;color:var(--cinza)">Fica salvo no servidor — se a tela travar ou a página recarregar no fim de uma abordagem, o resultado aparece aqui assim que for processado.</p>
+    <div id="minhasUltimas" class="carregando">carregando…</div>
+  </section>
+
+  <!-- TELA: ESCOLHER DIFICULDADE -->
+  <section id="tela-dificuldade" class="cartao escondido">
+    <h2>Nova ocorrência</h2>
+    <p style="font-size:13px;color:var(--cinza)">O perfil do tentante (agressivo, depressivo ou psicótico) é sorteado automaticamente e só será revelado na avaliação final.</p>
+    <label>Dificuldade</label>
+    <select id="selectDificuldade">
+      <option value="facil">Médio</option>
+      <option value="media" selected>Difícil</option>
+      <option value="dificil">Muito difícil</option>
+    </select>
+    <div class="linha-botoes">
+      <button class="btn-primario" onclick="iniciarNovoCaso()">Começar</button>
+      <button class="btn-secundario" onclick="mostrarTela('tela-menu')">Voltar</button>
+    </div>
+  </section>
+
+  <!-- TELA: SIMULADOR -->
+  <section id="tela-simulador" class="cartao escondido">
+    <h2>Ocorrência em andamento</h2>
+    <div class="cronometro escondido" id="cronometro">
+      ⏱️ <span class="tempo" id="cronometroTempo">00:00</span>
+      <span id="cronometroMeta"></span>
+    </div>
+    <div class="chat-log" id="briefingCena"></div>
+    <div class="chat-log escondido" id="chatLog"></div>
+    <div class="status-conversa escondido" id="statusConversa">
+      <div class="status-icone" id="statusIcone">🎙️</div>
+      <div class="status-texto" id="statusTexto">Sua vez de falar</div>
+    </div>
+    <div id="debugAudio" class="escondido" style="font-size:12px;color:#999;text-align:center;padding:4px 8px;word-break:break-word;"></div>
+    <div class="entrada-audio">
+      <div class="barra-gravar" id="barraGravar">
+        <span class="barra-icone" id="barraIcone">🎤</span>
+        <span class="barra-texto" id="barraTexto">Segure para falar</span>
+      </div>
+      <button class="btn-secundario" id="btnDigitar" onclick="alternarModoDigitar()" title="Digitar em vez de falar">⌨️</button>
+    </div>
+    <div class="entrada-chat escondido" id="entradaTexto">
+      <textarea id="campoFala" placeholder="Fale como o abordador..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();enviarFalaAluno();}"></textarea>
+      <button class="btn-primario" id="btnEnviar" onclick="enviarFalaAluno()">Enviar</button>
+      <button class="btn-secundario" id="btnVoltarAudio" onclick="alternarModoDigitar()" title="Voltar a falar por voz">🎤</button>
+    </div>
+    <div class="linha-botoes">
+      <label style="display:flex;align-items:center;gap:6px;font-weight:400;font-size:12px;margin:0">
+        <input type="checkbox" id="chkVoz" checked onchange="if(!this.checked) window.speechSynthesis && window.speechSynthesis.cancel();"> 🔊 Voz do tentante
+      </label>
+      <label style="display:flex;align-items:center;gap:6px;font-weight:400;font-size:12px;margin:0">
+        <input type="checkbox" id="chkMostrarTexto" onchange="document.getElementById('chatLog').classList.toggle('escondido', !this.checked)"> 👁️ Mostrar texto da conversa
+      </label>
+    </div>
+    <div class="linha-botoes">
+      <button class="btn-secundario" onclick="mostrarTela('tela-dificuldade')">Novo Cenário</button>
+      <button class="btn-secundario" onclick="mostrarTela('tela-menu')">Voltar ao Menu</button>
+    </div>
+  </section>
+
+  <!-- TELA: RELATÓRIO -->
+  <section id="tela-relatorio" class="cartao escondido">
+    <h2>Avaliação da abordagem</h2>
+    <div id="relatorioConteudo"></div>
+    <div class="linha-botoes">
+      <button class="btn-primario" onclick="mostrarTela('tela-dificuldade')">Nova Abordagem</button>
+      <button class="btn-secundario" onclick="abrirRanking()">Ver Ranking</button>
+      <button class="btn-secundario" onclick="mostrarTela('tela-menu')">Voltar ao Menu</button>
+    </div>
+  </section>
+
+  <!-- TELA: RANKING -->
+  <section id="tela-ranking" class="cartao escondido">
+    <h2>Ranking</h2>
+    <div class="abas" id="abasRanking">
+      <button class="aba-btn ativa" onclick="carregarRanking('geral', this)">Geral</button>
+      <button class="aba-btn" onclick="carregarRanking('agressivo', this)">Agressivo</button>
+      <button class="aba-btn" onclick="carregarRanking('depressivo', this)">Depressivo</button>
+      <button class="aba-btn" onclick="carregarRanking('psicotico', this)">Psicótico</button>
+    </div>
+    <div id="rankingConteudo" class="carregando">carregando…</div>
+    <div class="linha-botoes"><button class="btn-secundario" onclick="mostrarTela('tela-menu')">Voltar</button></div>
+  </section>
+
+  <!-- TELA: ADMIN -->
+  <section id="tela-admin" class="cartao escondido">
+    <h2>Painel do Instrutor</h2>
+
+    <h3>Liberar acesso</h3>
+    <label>E-mail do aluno</label>
+    <input type="email" id="adminNovoEmail" placeholder="aluno@exemplo.com">
+    <label>Observação (opcional)</label>
+    <input type="text" id="adminObservacao" placeholder="Ex: turma 5, pelotão X">
+    <div class="linha-botoes"><button class="btn-primario" onclick="liberarNovoEmail()">Liberar e-mail</button></div>
+    <div id="listaLiberados" style="margin-top:12px"></div>
+
+    <h3 style="margin-top:24px">Casos reais (uso interno)</h3>
+    <p style="font-size:12px;color:var(--cinza)">O relato completo fica só neste painel. A "lição resumida" (já anonimizada por você) pode ser usada pela IA para melhorar futuras simulações, se marcada como ativa.</p>
+    <label>Título</label>
+    <input type="text" id="casoTitulo" placeholder="Ex: Abordagem em viaduto - fator principal ambíguo">
+    <label>Relato interno (não vai para a IA)</label>
+    <textarea id="casoRelato" rows="3" placeholder="Relato detalhado do caso real"></textarea>
+    <label>Lição resumida e anonimizada (pode ir para a IA, se ativa)</label>
+    <textarea id="casoLicao" rows="2" placeholder="Ex: quando o fator de risco é X, personagens tendem a reagir com..."></textarea>
+    <div class="checkbox-linha">
+      <input type="checkbox" id="casoAtivo">
+      <label for="casoAtivo" style="margin:0;font-weight:400">Usar esta lição nas próximas simulações</label>
+    </div>
+    <div class="linha-botoes"><button class="btn-primario" onclick="adicionarCaso()">Salvar caso</button></div>
+    <div id="listaCasos" style="margin-top:12px"></div>
+
+    <h3 style="margin-top:24px">Histórico de conversas (só você vê)</h3>
+    <p style="font-size:12px;color:var(--cinza)">Todas as abordagens finalizadas ficam registradas aqui — diálogo completo, pra você revisar e ajustar a doutrina com base no uso real.</p>
+    <div id="listaTranscricoes" class="carregando">carregando…</div>
+    <div id="detalheTranscricao"></div>
+
+    <div class="linha-botoes" style="margin-top:20px"><button class="btn-secundario" onclick="mostrarTela('tela-menu')">Voltar</button></div>
+  </section>
+
+  <div class="rodape-nota">TSE — Treinamento Sucessores de Élpis · ferramenta didática fictícia · CATTS 2026 · em caso de sofrimento real, ligue 188 (CVV)</div>
+
+</main>
+
+<script>
+  // Front-end estático (fora do Apps Script) — fala com o back-end via fetch(),
+  // por isso consegue pedir microfone de verdade (o Apps Script, servido dentro
+  // de um iframe do Google, bloqueia acesso a microfone em qualquer navegador).
+  var APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxPBpxm57d7uSXX8QdOLdMkfOb90b93R6qeRHn9hkJY_0USMDJBKFffnuwrK7K4M-yCSA/exec';
+  var ADMIN_EMAIL_PUBLICO = 'juanhanzi@gmail.com';
+
+  function chamarServidor(fn) {
+    var args = Array.prototype.slice.call(arguments, 1);
+    var controlador = ('AbortController' in window) ? new AbortController() : null;
+    // Sem isso, uma chamada travada (ex.: Gemini demorando ou caindo em
+    // limite de taxa) deixava a tela presa em "Aguardando..." pra sempre,
+    // sem nenhum erro visível. iniciarCaso tem um limite maior porque faz até
+    // 3 chamadas seguidas ao Gemini (texto + 2 imagens), cada uma com sua
+    // própria nova tentativa embutida em caso de limite de taxa. enviarFala/
+    // enviarFalaAudio também precisam de folga: no turno que encerra a
+    // abordagem, o servidor encadeia a interpretação do turno + o cálculo
+    // automático da nota numa ÚNICA chamada — em conversas longas (histórico
+    // grande) isso passa fácil de 60s. Um aluno real perdeu o resultado da
+    // abordagem inteira por causa desse timeout curto demais (o servidor
+    // tinha terminado e salvo tudo certinho, só o navegador dele desistiu de
+    // esperar antes da resposta chegar).
+    var limiteMs = fn === 'iniciarCaso' ? 110000 : (fn === 'enviarFala' || fn === 'enviarFalaAudio' ? 120000 : 60000);
+    var tempoLimite = controlador ? setTimeout(function () { controlador.abort(); }, limiteMs) : null;
+    return fetch(APPS_SCRIPT_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // evita preflight CORS
+      body: JSON.stringify({ fn: fn, args: args }),
+      signal: controlador ? controlador.signal : undefined,
+    })
+      .then(function (r) { return r.json(); })
+      .then(function (json) {
+        if (!json.ok) throw new Error(json.erro || 'Erro no servidor');
+        return json.dados;
+      })
+      .catch(function (erro) {
+        if (erro && erro.name === 'AbortError') throw new Error('O servidor demorou demais para responder. Tente novamente.');
+        throw erro;
+      })
+      .finally(function () { if (tempoLimite) clearTimeout(tempoLimite); });
+  }
+
+  var sessaoAtual = { email: '', nome: '', matricula: '', admin: false };
+  var casoAtual = { sessionId: null, dificuldade: 'media', voz: null };
+
+  // ---------------- CRONÔMETRO DA ABORDAGEM ----------------
+  var cronometroIntervalo_ = null;
+  var cronometroInicioMs_ = null;
+
+  function formatarMinSeg_(totalSeg) {
+    var m = Math.floor(totalSeg / 60);
+    var s = totalSeg % 60;
+    return (m < 10 ? '0' : '') + m + ':' + (s < 10 ? '0' : '') + s;
+  }
+
+  function iniciarCronometro_(metaMinSeg, metaMaxSeg, offsetSeg) {
+    pararCronometro_();
+    cronometroInicioMs_ = Date.now() - (offsetSeg || 0) * 1000;
+    var el = document.getElementById('cronometro');
+    var elTempo = document.getElementById('cronometroTempo');
+    var elMeta = document.getElementById('cronometroMeta');
+    elMeta.textContent = metaMaxSeg ? ('· meta: até ' + formatarMinSeg_(metaMaxSeg)) : '';
+    el.classList.remove('escondido', 'dentro-da-meta', 'acima-da-meta');
+    function atualizar() {
+      var decorridoSeg = Math.floor((Date.now() - cronometroInicioMs_) / 1000);
+      elTempo.textContent = formatarMinSeg_(decorridoSeg);
+      if (metaMaxSeg) {
+        el.classList.toggle('acima-da-meta', decorridoSeg > metaMaxSeg);
+        el.classList.toggle('dentro-da-meta', decorridoSeg <= metaMaxSeg);
+      }
+    }
+    atualizar();
+    cronometroIntervalo_ = setInterval(atualizar, 1000);
+  }
+
+  function pararCronometro_() {
+    if (cronometroIntervalo_) { clearInterval(cronometroIntervalo_); cronometroIntervalo_ = null; }
+  }
+
+  // ---------------- VOZ DO TENTANTE (Text-to-Speech) ----------------
+  var vozesDisponiveis = [];
+  var NOMES_VOZ_FEMININA = ['luciana', 'joana', 'vitória', 'vitoria', 'camila', 'fernanda', 'female', 'mulher'];
+  var NOMES_VOZ_MASCULINA = ['felipe', 'daniel', 'ricardo', 'rodrigo', 'male', 'homem'];
+
+  function carregarVozesDisponiveis() {
+    if (!('speechSynthesis' in window)) return;
+    vozesDisponiveis = window.speechSynthesis.getVoices().filter(function (v) { return /pt(-|_)?br/i.test(v.lang) || /pt(-|_)?pt/i.test(v.lang); });
+  }
+  if ('speechSynthesis' in window) {
+    carregarVozesDisponiveis();
+    window.speechSynthesis.onvoiceschanged = carregarVozesDisponiveis;
+  }
+
+  function prepararVoz(voz) {
+    casoAtual.voz = voz || { genero: 'masculino', faixaEtaria: 'adulto' };
+  }
+
+  // Escolhe a voz do NARRADOR e a voz do TENTANTE de propósito distintas uma da
+  // outra, quando o aparelho tiver mais de uma voz pt-BR instalada.
+  function escolherVozNavegador_(genero, evitarVoz) {
+    if (!vozesDisponiveis.length) return null;
+    var lista = genero === 'feminino' ? NOMES_VOZ_FEMININA : NOMES_VOZ_MASCULINA;
+    var candidatas = vozesDisponiveis.filter(function (v) { return v !== evitarVoz; });
+    if (!candidatas.length) candidatas = vozesDisponiveis;
+    var achada = candidatas.find(function (v) {
+      var nome = v.name.toLowerCase();
+      return lista.some(function (chave) { return nome.indexOf(chave) >= 0; });
+    });
+    return achada || candidatas[candidatas.length - 1];
+  }
+
+  var vozUsadaPeloNarrador_ = null;
+
+  // Um ÚNICO elemento <audio>, criado uma vez e reaproveitado para toda
+  // reprodução (narrador e tentante). No iOS, o desbloqueio de autoplay feito
+  // durante o toque do usuário (ver desbloquearAudio_) só vale para o MESMO
+  // elemento que recebeu aquele play() — um "new Audio(...)" criado depois,
+  // mesmo que seja só alguns segundos depois, volta a ficar bloqueado
+  // (NotAllowedError). Por isso nunca criamos um Audio novo para tocar as
+  // falas: sempre trocamos o .src deste mesmo elemento.
+  var audioPlayerEl_ = ('Audio' in window) ? new Audio() : null;
+
+  /** Toca um áudio MP3 em base64 (vindo do Google Cloud TTS) e chama os callbacks certos. */
+  function tocarAudioBase64_(base64Mp3, aoComecar, aoTerminar) {
+    if (!audioPlayerEl_) { if (aoTerminar) aoTerminar(); return; }
+    try {
+      var audio = audioPlayerEl_;
+      audio.onplay = function () {
+        logAudioDebug_('🔊 tocando (' + Math.round(audio.duration || 0) + 's)');
+        if (aoComecar) aoComecar();
+      };
+      audio.onended = function () { if (aoTerminar) aoTerminar(); };
+      audio.onerror = function () {
+        var err = audio.error;
+        logAudioDebug_('🔇 erro ao tocar áudio (code ' + (err && err.code) + ')');
+        if (aoTerminar) aoTerminar();
+      };
+      audio.src = 'data:audio/mp3;base64,' + base64Mp3;
+      audio.load();
+      audio.play().catch(function (e) {
+        logAudioDebug_('🔇 play() bloqueado: ' + (e && e.name) + ' — ' + (e && e.message));
+        if (aoTerminar) aoTerminar();
+      });
+    } catch (e) {
+      logAudioDebug_('🔇 exceção ao tocar áudio: ' + (e && e.message));
+      if (aoTerminar) aoTerminar();
+    }
+  }
+
+  /** Voz do PERSONAGEM: tenta a voz natural do Google Cloud primeiro; se falhar, usa a do navegador. */
+  function falarComoTentante(textoCompleto, aoComecar, aoTerminar) {
+    if (!document.getElementById('chkVoz').checked) { if (aoTerminar) aoTerminar(); return; }
+    var texto = textoCompleto.replace(/\([^)]*\)/g, '').trim(); // remove sinais entre parênteses da fala
+    if (!texto) { if (aoTerminar) aoTerminar(); return; }
+    var voz = casoAtual.voz || { genero: 'masculino', faixaEtaria: 'adulto' };
+    chamarServidor('sintetizarTentante', texto, voz.genero, voz.faixaEtaria)
+      .then(function (b64) {
+        if (b64) { tocarAudioBase64_(b64, aoComecar, aoTerminar); }
+        else { falarComoTentanteNavegador_(texto, aoComecar, aoTerminar); }
+      })
+      .catch(function () { falarComoTentanteNavegador_(texto, aoComecar, aoTerminar); });
+  }
+
+  /** Reserva: síntese de voz do próprio navegador, só usada se o Google Cloud TTS falhar. */
+  function falarComoTentanteNavegador_(texto, aoComecar, aoTerminar) {
+    if (!('speechSynthesis' in window)) { if (aoTerminar) aoTerminar(); return; }
+    window.speechSynthesis.cancel();
+    var utter = new SpeechSynthesisUtterance(texto);
+    utter.lang = 'pt-BR';
+    var voz = casoAtual.voz || { genero: 'masculino', faixaEtaria: 'adulto' };
+    var vozNavegador = escolherVozNavegador_(voz.genero, vozUsadaPeloNarrador_);
+    if (vozNavegador) utter.voice = vozNavegador;
+    var pitch = voz.genero === 'feminino' ? 1.3 : 0.7;
+    var rate = 1.02;
+    if (voz.faixaEtaria === 'jovem_adulto') { pitch += 0.12; rate = 1.08; }
+    if (voz.faixaEtaria === 'idoso') { pitch -= 0.15; rate = 0.88; }
+    utter.pitch = Math.max(0.4, Math.min(2, pitch));
+    utter.rate = rate;
+    if (aoComecar) utter.onstart = aoComecar;
+    utter.onend = aoTerminar || null;
+    utter.onerror = aoTerminar || null;
+    window.speechSynthesis.speak(utter);
+  }
+
+  /** Narra a introdução/despacho com voz de narrador do Google Cloud; se falhar, cai no navegador. */
+  function narrar_(texto, aoTerminar) {
+    if (!document.getElementById('chkVoz').checked || !texto) { if (aoTerminar) aoTerminar(); return; }
+    var limpo = texto.replace(/\([^)]*\)/g, '').trim();
+    if (!limpo) { if (aoTerminar) aoTerminar(); return; }
+    chamarServidor('sintetizarNarrador', limpo)
+      .then(function (b64) {
+        if (b64) { tocarAudioBase64_(b64, null, aoTerminar); }
+        else { narrarNavegador_(limpo, aoTerminar); }
+      })
+      .catch(function () { narrarNavegador_(limpo, aoTerminar); });
+  }
+
+  function narrarNavegador_(limpo, aoTerminar) {
+    if (!('speechSynthesis' in window)) { if (aoTerminar) aoTerminar(); return; }
+    window.speechSynthesis.cancel();
+    var utter = new SpeechSynthesisUtterance(limpo);
+    utter.lang = 'pt-BR';
+    // prefere a ÚLTIMA voz da lista (o tentante prioriza a primeira que casar com o
+    // gênero, então usar a ponta oposta já ajuda a soarem diferentes por padrão)
+    vozUsadaPeloNarrador_ = vozesDisponiveis.length ? vozesDisponiveis[vozesDisponiveis.length - 1] : null;
+    if (vozUsadaPeloNarrador_) utter.voice = vozUsadaPeloNarrador_;
+    utter.pitch = 1.0;
+    utter.rate = 0.95;
+    utter.onend = aoTerminar || null;
+    utter.onerror = aoTerminar || null;
+    window.speechSynthesis.speak(utter);
+  }
+
+  // ---------------- FALA DO ALUNO — gravação real (segurar e arrastar) ----------------
+  var barraGravarEl = document.getElementById('barraGravar');
+  var suportaGravacao_ = !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
+  var mimeTypeGravacao_ = (function () {
+    if (!window.MediaRecorder || !MediaRecorder.isTypeSupported) return '';
+    var candidatos = ['audio/mp4', 'audio/webm', 'audio/ogg', 'audio/wav'];
+    for (var i = 0; i < candidatos.length; i++) { if (MediaRecorder.isTypeSupported(candidatos[i])) return candidatos[i]; }
+    return '';
+  })();
+
+  var streamAudio_ = null;
+  var gravadorAudio_ = null;
+  var chunksAudio_ = [];
+  var gravando = false;
+  var cancelarEnvioAudio = false;
+  var xInicialPressao_ = 0;
+  var podeFalarAgora_ = true;
+
+  function atualizarBarra_(estado) {
+    var icone = document.getElementById('barraIcone');
+    var texto = document.getElementById('barraTexto');
+    barraGravarEl.classList.remove('gravando', 'cancelando');
+    if (estado === 'gravando') {
+      barraGravarEl.classList.add('gravando');
+      icone.textContent = '🔴';
+      texto.textContent = 'Gravando... solte para enviar';
+    } else if (estado === 'cancelando') {
+      barraGravarEl.classList.add('cancelando');
+      icone.textContent = '❌';
+      texto.textContent = 'Solte para cancelar';
+    } else {
+      icone.textContent = '🎤';
+      texto.textContent = 'Segure para falar';
+    }
+  }
+
+  function definirPodeFalar_(pode) {
+    podeFalarAgora_ = pode;
+    barraGravarEl.classList.toggle('travada', !pode);
+    document.getElementById('btnEnviar').disabled = !pode;
+  }
+
+  if (!suportaGravacao_) {
+    window.addEventListener('load', function () {
+      barraGravarEl.classList.add('indisponivel');
+      document.getElementById('barraTexto').textContent = 'Gravação indisponível neste navegador — use o teclado';
+      barraGravarEl.style.pointerEvents = 'none';
+      alternarModoDigitar(true);
+    });
+  }
+
+  // Sempre pega um stream de microfone NOVO (nunca reaproveita um antigo).
+  // No iOS, tocar a voz do narrador/tentante pode encerrar ou mutar um
+  // MediaStream de microfone que ficou aberto de antes — gravar em cima de um
+  // stream "morto" produz um áudio vazio, sem erro nenhum (por isso, depois de
+  // ouvir a voz funcionar, o envio simplesmente parava de fazer efeito).
+  function garantirStreamAudio_() {
+    pararStreamAudio_(streamAudio_);
+    streamAudio_ = null;
+    return navigator.mediaDevices.getUserMedia({ audio: true }).then(function (stream) {
+      streamAudio_ = stream;
+      return stream;
+    });
+  }
+
+  function pararStreamAudio_(stream) {
+    if (!stream) return;
+    try { stream.getTracks().forEach(function (t) { t.stop(); }); } catch (e) {}
+  }
+
+  function iniciarPressaoAudio_(e) {
+    if (!suportaGravacao_ || gravando || !podeFalarAgora_) return;
+    e.preventDefault();
+    // Prende o ponteiro neste elemento: sem isso, no iOS o dedo "sai" da
+    // barra ao arrastar e o pointerup nunca chega até nós.
+    try { barraGravarEl.setPointerCapture(e.pointerId); } catch (err) {}
+    xInicialPressao_ = e.clientX;
+    cancelarEnvioAudio = false;
+    gravando = true;
+    atualizarBarra_('gravando');
+    garantirStreamAudio_()
+      .then(function (stream) {
+        if (!gravando) { pararStreamAudio_(stream); return; } // o aluno já soltou antes da permissão do microfone chegar
+        chunksAudio_ = [];
+        var opcoes = mimeTypeGravacao_ ? { mimeType: mimeTypeGravacao_ } : undefined;
+        gravadorAudio_ = new MediaRecorder(stream, opcoes);
+        gravadorAudio_.ondataavailable = function (ev) { if (ev.data && ev.data.size > 0) chunksAudio_.push(ev.data); };
+        gravadorAudio_.onstop = function () {
+          gravando = false;
+          atualizarBarra_('ocioso');
+          pararStreamAudio_(stream); // libera o microfone entre uma fala e outra
+          var foiCancelada = cancelarEnvioAudio;
+          var chunks = chunksAudio_;
+          chunksAudio_ = [];
+          if (foiCancelada || !chunks.length) {
+            if (!foiCancelada) logAudioDebug_('🎙️ gravação vazia (0 pedaços de áudio capturados)');
+            return;
+          }
+          var blob = new Blob(chunks, { type: (gravadorAudio_ && gravadorAudio_.mimeType) || mimeTypeGravacao_ || 'audio/mp4' });
+          enviarFalaAudioGravado_(blob);
+        };
+        gravadorAudio_.start();
+      })
+      .catch(function (err) {
+        gravando = false;
+        atualizarBarra_('ocioso');
+        alert('Não foi possível acessar o microfone (' + (err && err.message ? err.message : err) + '). Use o teclado (⌨️) para digitar.');
+      });
+  }
+
+  function moverPressaoAudio_(e) {
+    if (!gravando) return;
+    var dx = e.clientX - xInicialPressao_;
+    if (dx < -70 && !cancelarEnvioAudio) {
+      cancelarEnvioAudio = true;
+      atualizarBarra_('cancelando');
+    } else if (dx >= -70 && cancelarEnvioAudio) {
+      cancelarEnvioAudio = false;
+      atualizarBarra_('gravando');
+    }
+  }
+
+  function soltarPressaoAudio_() {
+    if (!gravando) return;
+    if (gravadorAudio_ && gravadorAudio_.state !== 'inactive') {
+      gravadorAudio_.stop();
+    } else {
+      gravando = false; // ainda esperando a permissão chegar — cancela quando ela vier
+      atualizarBarra_('ocioso');
+    }
+  }
+
+  if (barraGravarEl) {
+    barraGravarEl.addEventListener('pointerdown', iniciarPressaoAudio_);
+    // Com pointer capture, estes três disparam no PRÓPRIO elemento mesmo com
+    // o dedo fora dele — mais confiável no iOS do que ouvir em window.
+    barraGravarEl.addEventListener('pointermove', moverPressaoAudio_);
+    barraGravarEl.addEventListener('pointerup', soltarPressaoAudio_);
+    barraGravarEl.addEventListener('pointercancel', soltarPressaoAudio_);
+    // Mantidos como reforço, caso a captura falhe em algum navegador.
+    window.addEventListener('pointerup', soltarPressaoAudio_);
+    window.addEventListener('pointercancel', soltarPressaoAudio_);
+  }
+
+  function enviarFalaAudioGravado_(blob) {
+    if (!casoAtual.sessionId) return;
+    definirPodeFalar_(false);
+    atualizarStatus('⏳', 'Aguardando a reação do tentante...', false);
+    var leitor = new FileReader();
+    leitor.onload = function () {
+      var base64 = String(leitor.result).split(',')[1] || '';
+      var mimeType = blob.type || mimeTypeGravacao_ || 'audio/mp4';
+      chamarServidor('enviarFalaAudio', casoAtual.sessionId, base64, mimeType)
+        .then(function (resp) {
+          if (resp.transcricaoAluno) adicionarBolha('aluno', resp.transcricaoAluno);
+          adicionarBolha('tentante', resp.fala);
+          falarComoTentante(resp.fala, function () {
+            atualizarStatus('🔊', 'Tentante falando...', true);
+          }, function () {
+            atualizarStatus('🎙️', 'Sua vez de falar', false);
+            definirPodeFalar_(true);
+          });
+          tratarDesfecho_(resp);
+        })
+        .catch(function (e) {
+          mostrarErroGenerico(e);
+          atualizarStatus('🎙️', 'Sua vez de falar', false);
+          definirPodeFalar_(true);
+        });
+    };
+    leitor.readAsDataURL(blob);
+  }
+
+  function alternarModoDigitar(forcarDigitar) {
+    var mostrarTexto = forcarDigitar === true || document.getElementById('entradaTexto').classList.contains('escondido');
+    document.getElementById('entradaTexto').classList.toggle('escondido', !mostrarTexto);
+    document.querySelector('.entrada-audio').classList.toggle('escondido', mostrarTexto);
+  }
+
+  function mostrarTela(id) {
+    if (id !== 'tela-simulador') { pararCronometro_(); limparCasoAtivo_(); }
+    document.querySelectorAll('main > section').forEach(function (s) { s.classList.add('escondido'); });
+    document.getElementById(id).classList.remove('escondido');
+  }
+
+  // ---------------- RECUPERAÇÃO DE SESSÃO ----------------
+  // Se a página recarregar/travar no meio de uma abordagem (erro de rede,
+  // aba matada pelo sistema etc.), o servidor ainda tem a conversa guardada
+  // em cache — só precisamos saber o sessionId pra buscar de volta. Sem
+  // isso, um erro no meio do caminho perdia a abordagem inteira.
+  function salvarCasoAtivo_() {
+    try {
+      localStorage.setItem('tse_caso_ativo', JSON.stringify({
+        sessionId: casoAtual.sessionId, dificuldade: casoAtual.dificuldade, email: sessaoAtual.email,
+      }));
+    } catch (e) {}
+  }
+
+  function limparCasoAtivo_() {
+    try { localStorage.removeItem('tse_caso_ativo'); } catch (e) {}
+  }
+
+  function verificarCasoParaRetomar_() {
+    var bruto, salvo;
+    try { bruto = localStorage.getItem('tse_caso_ativo'); } catch (e) { return; }
+    if (!bruto) return;
+    try { salvo = JSON.parse(bruto); } catch (e) { limparCasoAtivo_(); return; }
+    if (!salvo || !salvo.sessionId || salvo.email !== sessaoAtual.email) { limparCasoAtivo_(); return; }
+    if (!confirm('Encontramos uma abordagem em andamento que não foi finalizada (provavelmente por um erro de conexão). Deseja continuar de onde parou?')) {
+      limparCasoAtivo_();
+      return;
+    }
+    retomarConversa_(salvo.sessionId, salvo.dificuldade);
+  }
+
+  function retomarConversa_(sessionId, dificuldade) {
+    chamarServidor('retomarSessao', sessionId, sessaoAtual.email)
+      .then(function (resp) {
+        if (resp.status !== 'em_andamento') { limparCasoAtivo_(); return; }
+        casoAtual.sessionId = sessionId;
+        casoAtual.dificuldade = dificuldade || resp.dificuldade;
+        prepararVoz(resp.voz);
+        salvarCasoAtivo_();
+        mostrarTela('tela-simulador');
+        document.getElementById('briefingCena').innerHTML =
+          '<div class="bolha bolha-sistema" style="max-width:100%">Abordagem retomada após uma interrupção — ' +
+          'a imagem original não fica salva, mas a conversa continua normalmente a partir daqui.</div>';
+        document.getElementById('chatLog').innerHTML = '';
+        (resp.historico || []).forEach(function (turno) {
+          adicionarBolha(turno.papel === 'user' ? 'aluno' : 'tentante', turno.texto);
+        });
+        document.getElementById('chatLog').classList.remove('escondido');
+        document.getElementById('statusConversa').classList.remove('escondido', 'status-sucesso', 'status-falha');
+        if (resp.tempo) iniciarCronometro_(resp.tempo.metaMinSeg, resp.tempo.metaMaxSeg, resp.segundosDecorridos);
+        atualizarStatus('🎙️', 'Sua vez de falar', false);
+        definirPodeFalar_(true);
+      })
+      .catch(function (e) { limparCasoAtivo_(); mostrarErroGenerico(e); });
+  }
+
+  function carregarContador() {
+    chamarServidor('obterContadorGlobal')
+      .then(function (n) { document.getElementById('contadorGlobal').textContent = n + ' abordagem(ns) realizada(s) no total'; })
+      .catch(function () {});
+  }
+
+  // ---------------- LOGIN ----------------
+  window.onload = function () {
+    carregarContador();
+    var salvo = localStorage.getItem('tse_sessao');
+    if (salvo) {
+      try {
+        var s = JSON.parse(salvo);
+        document.getElementById('loginNome').value = s.nome || '';
+        document.getElementById('loginMatricula').value = s.matricula || '';
+        document.getElementById('loginEmail').value = s.email || '';
+      } catch (e) {}
+    }
+    document.getElementById('termoAceite').addEventListener('change', function () {
+      document.getElementById('btnAceitarTermo').disabled = !this.checked;
+    });
+  };
+
+  function tentarEntrar() {
+    var email = document.getElementById('loginEmail').value.trim();
+    var nome = document.getElementById('loginNome').value.trim();
+    var matricula = document.getElementById('loginMatricula').value.trim();
+    document.getElementById('loginErro').innerHTML = '';
+    if (!email || !nome) {
+      document.getElementById('loginErro').innerHTML = '<div class="erro">Preencha nome e e-mail.</div>';
+      return;
+    }
+    chamarServidor('entrar', email, nome, matricula)
+      .then(function (resp) {
+        if (!resp.liberado) {
+          document.getElementById('loginErro').innerHTML =
+            '<div class="erro">Este e-mail ainda não foi liberado pelo instrutor. ' +
+            'Solicite a liberação: <a href="mailto:' + ADMIN_EMAIL_PUBLICO + '">' + ADMIN_EMAIL_PUBLICO + '</a></div>';
+          return;
+        }
+        sessaoAtual = { email: email, nome: resp.nome || nome, matricula: resp.matricula || matricula, admin: resp.admin };
+        localStorage.setItem('tse_sessao', JSON.stringify(sessaoAtual));
+        if (resp.precisaConsentimento) {
+          mostrarTela('tela-termo');
+        } else {
+          entrarNoMenu(resp);
+        }
+      })
+      .catch(mostrarErroGenerico);
+  }
+
+  function aceitarTermo() {
+    chamarServidor('registrarConsentimento', sessaoAtual.email)
+      .then(function () { entrarNoMenu({ totalAbordagens: 0, melhorNota: '' }); })
+      .catch(mostrarErroGenerico);
+  }
+
+  function entrarNoMenu(resp) {
+    document.getElementById('menuNome').textContent = sessaoAtual.nome;
+    document.getElementById('menuTotalAbordagens').textContent = resp.totalAbordagens || 0;
+    document.getElementById('menuMelhorNota').textContent = resp.melhorNota !== '' && resp.melhorNota !== undefined ? Number(resp.melhorNota).toFixed(2) : '—';
+    document.getElementById('btnPainelAdmin').classList.toggle('escondido', !sessaoAtual.admin);
+    mostrarTela('tela-menu');
+    carregarContador();
+    carregarMinhasUltimas_();
+    verificarCasoParaRetomar_();
+  }
+
+  /**
+   * Últimos resultados do PRÓPRIO aluno, direto do servidor — funciona como
+   * rede de segurança: se o navegador travar/perder a resposta bem no fim de
+   * uma abordagem (ex.: timeout numa conversa longa), o resultado já ficou
+   * salvo no servidor mesmo assim, e aparece aqui assim que o aluno voltar
+   * ao menu (mesmo depois de recarregar a página inteira).
+   */
+  function carregarMinhasUltimas_() {
+    var el = document.getElementById('minhasUltimas');
+    el.className = 'carregando';
+    el.textContent = 'carregando…';
+    chamarServidor('obterMinhasTentativas', sessaoAtual.email)
+      .then(function (lista) {
+        el.className = '';
+        var ultimas = (lista || []).slice(0, 3);
+        if (!ultimas.length) {
+          el.innerHTML = '<p style="font-size:12px;color:var(--cinza)">Nenhuma abordagem finalizada ainda.</p>';
+          return;
+        }
+        el.innerHTML = ultimas.map(function (t) {
+          return '<div class="lista-casos-item"><div class="topo"><strong>' +
+            new Date(t.dataHora).toLocaleString('pt-BR') + '</strong>' +
+            '<span class="tipo-badge tipo-' + t.tipoTentante + '">' + t.tipoTentante + '</span></div>' +
+            '<div style="font-size:12px;color:var(--cinza);margin-top:4px">' + t.dificuldade + ' · ' + t.resultado +
+            ' · nota <strong>' + (typeof t.nota === 'number' ? t.nota.toFixed(2) : '—') + '</strong></div></div>';
+        }).join('');
+      })
+      .catch(function () {
+        el.className = '';
+        el.innerHTML = '<p style="font-size:12px;color:var(--cinza)">Não foi possível carregar agora.</p>';
+      });
+  }
+
+  function sair() {
+    localStorage.removeItem('tse_sessao');
+    location.reload();
+  }
+
+  function mostrarErroGenerico(erro) {
+    alert('Ocorreu um erro: ' + (erro && erro.message ? erro.message : erro));
+  }
+
+  // ---------------- SIMULADOR ----------------
+
+  // WAV de 0,1s de silêncio (8-bit PCM, 8kHz) — precisa ter amostras de
+  // verdade; um WAV "vazio" (data chunk de 0 bytes) é rejeitado pelo Safari.
+  // Mostra uma linha pequena e discreta na tela com o que aconteceu com o
+  // áudio — não temos como abrir o console do iPhone remotamente, então
+  // isso é o jeito de enxergar o erro real caso o áudio falhe de novo.
+  function logAudioDebug_(msg) {
+    var el = document.getElementById('debugAudio');
+    if (!el) return;
+    el.textContent = msg;
+    el.classList.remove('escondido');
+  }
+
+  var AUDIO_SILENCIOSO_DATA_URI_ = 'data:audio/wav;base64,UklGRkQDAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YSADAACAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgICAgA==';
+
+  // Desbloqueia o áudio no iOS/Safari: precisa ser chamado DENTRO de um toque
+  // real do usuário (não depois de uma resposta assíncrona do servidor), e
+  // precisa usar o MESMO elemento <audio> (audioPlayerEl_) que depois vai
+  // tocar as falas de verdade — ver o comentário perto de tocarAudioBase64_.
+  // São DOIS mecanismos de bloqueio separados no iOS — falar a voz do navegador
+  // (speechSynthesis) NÃO libera a reprodução de elementos <audio> (usados pelos
+  // áudios MP3 do Google Cloud TTS), por isso os dois precisam ser destravados aqui.
+  function desbloquearAudio_() {
+    if ('speechSynthesis' in window) {
+      try {
+        var utter = new SpeechSynthesisUtterance(' ');
+        utter.volume = 0.01;
+        window.speechSynthesis.speak(utter);
+      } catch (e) {}
+    }
+    if (!audioPlayerEl_) return;
+    try {
+      // Precisa ter amostras de verdade — um WAV com 0 bytes de áudio (data
+      // chunk vazio) é rejeitado pelo Safari antes de "contar" como play(),
+      // e nesse caso o destravamento não acontece de verdade.
+      audioPlayerEl_.src = AUDIO_SILENCIOSO_DATA_URI_;
+      audioPlayerEl_.load();
+      var p = audioPlayerEl_.play();
+      if (p && p.then) {
+        p.then(function () { logAudioDebug_('🔓 áudio destravado com sucesso'); })
+          .catch(function (e) { logAudioDebug_('🔒 destravamento falhou: ' + (e && e.name) + ' — ' + (e && e.message)); });
+      }
+    } catch (e) {
+      logAudioDebug_('🔒 exceção ao destravar: ' + (e && e.message));
+    }
+  }
+
+  function atualizarStatus(icone, texto, falando) {
+    document.getElementById('statusIcone').textContent = icone;
+    document.getElementById('statusIcone').classList.toggle('falando', !!falando);
+    document.getElementById('statusTexto').textContent = texto;
+  }
+
+  function iniciarNovoCaso() {
+    desbloquearAudio_(); // precisa ser síncrono com o clique, por isso vem primeiro
+    // Pede a permissão do microfone já aqui também, dentro do mesmo toque do
+    // usuário — assim, quando ele for gravar de verdade, a permissão já está ok.
+    if (suportaGravacao_) { garantirStreamAudio_().catch(function () {}); }
+    casoAtual.dificuldade = document.getElementById('selectDificuldade').value;
+    document.getElementById('briefingCena').innerHTML = '<div class="carregando">Gerando ocorrência…</div>';
+    document.getElementById('chatLog').innerHTML = '';
+    document.getElementById('statusConversa').classList.add('escondido');
+    document.getElementById('statusConversa').classList.remove('status-sucesso', 'status-falha');
+    pararCronometro_();
+    document.getElementById('cronometro').classList.add('escondido');
+    definirPodeFalar_(false);
+    mostrarTela('tela-simulador');
+    chamarServidor('iniciarCaso', sessaoAtual.email, casoAtual.dificuldade)
+      .then(function (resp) {
+        casoAtual.sessionId = resp.sessionId;
+        prepararVoz(resp.voz);
+        salvarCasoAtivo_();
+        if (resp.tempo) iniciarCronometro_(resp.tempo.metaMinSeg, resp.tempo.metaMaxSeg);
+        var briefing = document.getElementById('briefingCena');
+        briefing.innerHTML = '';
+        if (resp.imagemCena || resp.imagemPersonagem) {
+          var linhaImagens = document.createElement('div');
+          linhaImagens.className = 'imagens-duplas';
+          if (resp.imagemCena) {
+            var img = document.createElement('img');
+            img.src = resp.imagemCena;
+            img.alt = 'Ilustração do local da ocorrência';
+            img.className = 'imagem-cena';
+            linhaImagens.appendChild(img);
+          }
+          if (resp.imagemPersonagem) {
+            var imgPessoa = document.createElement('img');
+            imgPessoa.src = resp.imagemPersonagem;
+            imgPessoa.alt = 'Retrato do personagem';
+            imgPessoa.className = 'imagem-personagem';
+            linhaImagens.appendChild(imgPessoa);
+          }
+          briefing.appendChild(linhaImagens);
+        }
+        var divNarracao = document.createElement('div');
+        divNarracao.className = 'bolha bolha-sistema';
+        divNarracao.style.maxWidth = '100%';
+        divNarracao.textContent = resp.narracao;
+        briefing.appendChild(divNarracao);
+
+        var temFalaInicial = resp.primeiroContatoTipo === 'fala' && resp.primeiroContatoTexto;
+        if (temFalaInicial) {
+          adicionarBolha('tentante', resp.primeiroContatoTexto);
+        } else if (resp.primeiroContatoTexto) {
+          var divSilencio = document.createElement('div');
+          divSilencio.className = 'bolha bolha-sistema';
+          divSilencio.style.maxWidth = '100%';
+          divSilencio.textContent = resp.primeiroContatoTexto;
+          briefing.appendChild(divSilencio);
+        }
+
+        if (!document.getElementById('chkMostrarTexto').checked) {
+          document.getElementById('chatLog').classList.add('escondido');
+        }
+        document.getElementById('statusConversa').classList.remove('escondido');
+        atualizarStatus('📻', 'Narrando a ocorrência...', true);
+
+        narrar_(resp.narracao, function () {
+          if (temFalaInicial) {
+            atualizarStatus('🔊', 'Tentante falando...', true);
+            falarComoTentante(resp.primeiroContatoTexto, null, function () {
+              atualizarStatus('🎙️', 'Sua vez de falar', false);
+              definirPodeFalar_(true);
+            });
+          } else {
+            atualizarStatus('🎙️', 'Sua vez de falar', false);
+            definirPodeFalar_(true);
+          }
+        });
+      })
+      .catch(function (e) { mostrarErroGenerico(e); mostrarTela('tela-dificuldade'); });
+  }
+
+  function adicionarBolha(tipo, texto) {
+    var div = document.createElement('div');
+    div.className = 'bolha bolha-' + tipo;
+    div.textContent = texto;
+    document.getElementById('chatLog').appendChild(div);
+    div.scrollIntoView({ behavior: 'smooth', block: 'end' });
+  }
+
+  /** Tratamento comum de fim de simulação, usado tanto por texto quanto por áudio. */
+  function tratarDesfecho_(resp) {
+    if (resp.status === 'fim_positivo' || resp.status === 'fim_negativo' || resp.status === 'tempo_esgotado') { pararCronometro_(); limparCasoAtivo_(); }
+    if (resp.status === 'tempo_esgotado') {
+      adicionarBolha('fim-negativo', resp.mensagemSistema);
+      document.getElementById('chatLog').classList.remove('escondido');
+      var statusEl3 = document.getElementById('statusConversa');
+      statusEl3.classList.remove('escondido');
+      statusEl3.classList.add('status-falha');
+      atualizarStatus('⏰', 'Tempo máximo atingido', false);
+      definirPodeFalar_(false);
+      setTimeout(function () { mostrarRelatorioOuErro_(resp); }, 1200);
+    } else if (resp.status === 'fim_positivo') {
+      adicionarBolha('fim-positivo', resp.mensagemSistema);
+      document.getElementById('chatLog').classList.remove('escondido');
+      var statusEl = document.getElementById('statusConversa');
+      statusEl.classList.remove('escondido');
+      statusEl.classList.add('status-sucesso');
+      atualizarStatus('✅', 'Abordagem bem-sucedida!', false);
+      definirPodeFalar_(false);
+      setTimeout(function () { mostrarRelatorioOuErro_(resp); }, 1200);
+    } else if (resp.status === 'fim_negativo') {
+      adicionarBolha('fim-negativo', resp.mensagemSistema);
+      document.getElementById('chatLog').classList.remove('escondido');
+      var statusEl2 = document.getElementById('statusConversa');
+      statusEl2.classList.remove('escondido');
+      statusEl2.classList.add('status-falha');
+      atualizarStatus('❌', 'Abordagem malsucedida', false);
+      definirPodeFalar_(false);
+      setTimeout(function () { mostrarRelatorioOuErro_(resp); }, 1200);
+    }
+  }
+
+  function enviarFalaAluno() {
+    var campo = document.getElementById('campoFala');
+    var texto = campo.value.trim();
+    if (!texto || !casoAtual.sessionId) return;
+    adicionarBolha('aluno', texto);
+    campo.value = '';
+    definirPodeFalar_(false);
+    atualizarStatus('⏳', 'Aguardando a reação do tentante...', false);
+    chamarServidor('enviarFala', casoAtual.sessionId, texto)
+      .then(function (resp) {
+        adicionarBolha('tentante', resp.fala);
+        falarComoTentante(resp.fala, function () {
+          atualizarStatus('🔊', 'Tentante falando...', true);
+        }, function () {
+          atualizarStatus('🎙️', 'Sua vez de falar', false);
+          definirPodeFalar_(true);
+        });
+        tratarDesfecho_(resp);
+      })
+      .catch(function (e) {
+        mostrarErroGenerico(e);
+        atualizarStatus('🎙️', 'Sua vez de falar', false);
+        definirPodeFalar_(true);
+      });
+  }
+
+  /**
+   * A abordagem já terminou (positiva ou negativa) nesse ponto — isso não
+   * pode depender de a avaliação ter funcionado. Se `avaliacaoAutomatica`
+   * não veio (ex.: a IA falhou por limite/cota no momento de avaliar), evita
+   * quebrar a tela silenciosamente: mostra uma mensagem clara em vez de
+   * travar sem nada aparecer.
+   */
+  function mostrarRelatorioOuErro_(resp) {
+    if (resp.avaliacaoAutomatica) {
+      mostrarRelatorio(resp.avaliacaoAutomatica);
+      return;
+    }
+    var msg = resp.avaliacaoErro || 'motivo desconhecido';
+    document.getElementById('relatorioConteudo').innerHTML =
+      '<p style="text-align:center;font-size:15px;font-weight:700;margin-top:12px">A abordagem foi encerrada, mas não foi possível calcular a nota agora.</p>' +
+      '<p style="font-size:13px;color:var(--cinza);text-align:center">A IA de avaliação está indisponível no momento (' + msg + '). ' +
+      'Avise o instrutor com a data/hora e seu e-mail — enquanto a sessão não expirar (algumas horas), ainda é possível recuperar essa conversa e gerar a nota manualmente.</p>';
+    mostrarTela('tela-relatorio');
+    carregarContador();
+  }
+
+  function mostrarRelatorio(rel) {
+    var html = '';
+    html += '<div class="nota-grande">' + Number(rel.nota).toFixed(2) + ' / 10</div>';
+    html += '<p style="text-align:center;font-size:13px;color:var(--cinza)">Resultado: <strong>' + rel.resultado + '</strong> · Perfil: <span class="tipo-badge tipo-' + rel.tipoTentante + '">' + rel.tipoTentante + '</span></p>';
+
+    html += '<h3>Ficha revelada do caso</h3>';
+    if (rel.fichaRevelada.nome) html += '<p style="font-size:13px"><strong>Nome:</strong> ' + rel.fichaRevelada.nome + '</p>';
+    if (rel.fichaRevelada.tipoTentativa) html += '<p style="font-size:13px"><strong>Tipo de tentativa:</strong> ' + rel.fichaRevelada.tipoTentativa.replace(/_/g, ' ') + '</p>';
+    html += '<p style="font-size:13px"><strong>Fator principal:</strong> ' + (rel.fichaRevelada.fatorPrincipal || '—') + '</p>';
+    html += '<p style="font-size:13px"><strong>Fatores de risco:</strong> ' + ((rel.fichaRevelada.fatoresRisco || []).join('; ')) + '</p>';
+    html += '<p style="font-size:13px"><strong>Fatores de proteção:</strong> ' + ((rel.fichaRevelada.fatoresProtecao || []).join('; ')) + '</p>';
+    if (rel.fatoresRevelados) html += '<p style="font-size:13px"><strong>O que apareceu na conversa:</strong> ' + rel.fatoresRevelados + '</p>';
+
+    html += '<h3>Pontuação item a item</h3>';
+    (rel.detalhamento || []).forEach(function (d) {
+      var classe = d.pontos > 0 ? 'pontos-pos' : (d.pontos < 0 ? 'pontos-neg' : 'pontos-zero');
+      html += '<div class="item-verdict"><span>' + d.item + ' <em style="color:var(--cinza)">(' + d.verdict.replace(/_/g, ' ') + ')</em></span><span class="' + classe + '">' + (d.pontos > 0 ? '+' : '') + d.pontos.toFixed(2) + '</span></div>';
+    });
+    if (rel.errosDetectados && rel.errosDetectados.length) {
+      html += '<h3>Erros graves detectados</h3>';
+      rel.errosDetectados.forEach(function (er) {
+        html += '<div class="item-verdict"><span>' + er.item + (er.evidencia ? ' — "' + er.evidencia + '"' : '') + '</span><span class="pontos-neg">' + er.pontos + '</span></div>';
+      });
+    }
+
+    if (rel.acertos && rel.acertos.length) {
+      html += '<h3>Acertos mais relevantes</h3><ul style="font-size:13px">' + rel.acertos.map(function (a) { return '<li>' + a + '</li>'; }).join('') + '</ul>';
+    }
+    if (rel.ajustes && rel.ajustes.length) {
+      html += '<h3>Ajustes sugeridos</h3><ul style="font-size:13px">' + rel.ajustes.map(function (a) { return '<li>' + a.observacao + (a.exemploAlternativo ? '<br><em>Exemplo: "' + a.exemploAlternativo + '"</em>' : '') + '</li>'; }).join('') + '</ul>';
+    }
+
+    if (rel.linhaEvolucao && rel.linhaEvolucao.length) {
+      html += '<h3>Linha de evolução</h3>';
+      rel.linhaEvolucao.forEach(function (l) {
+        html += '<p style="font-size:12px;margin:4px 0"><strong>Você:</strong> "' + l.falaAluno + '" → <em>' + l.reacao + '</em></p>';
+      });
+    }
+
+    document.getElementById('relatorioConteudo').innerHTML = html;
+    mostrarTela('tela-relatorio');
+    carregarContador();
+  }
+
+  // ---------------- RANKING ----------------
+  function abrirRanking() {
+    mostrarTela('tela-ranking');
+    carregarRanking('geral', document.querySelector('#abasRanking .aba-btn'));
+  }
+
+  function carregarRanking(tipo, botao) {
+    document.querySelectorAll('#abasRanking .aba-btn').forEach(function (b) { b.classList.remove('ativa'); });
+    if (botao) botao.classList.add('ativa');
+    document.getElementById('rankingConteudo').innerHTML = '<div class="carregando">carregando…</div>';
+    chamarServidor('obterRanking', tipo)
+      .then(function (lista) {
+        if (!lista.length) {
+          document.getElementById('rankingConteudo').innerHTML = '<p style="font-size:13px;color:var(--cinza)">Ainda não há avaliações registradas.</p>';
+          return;
+        }
+        var html = '<table><tr><th>#</th><th>Aluno</th><th>Tipo</th><th>Nota</th></tr>';
+        lista.forEach(function (r, i) {
+          html += '<tr><td>' + (i + 1) + '</td><td>' + r.nome + '</td><td><span class="tipo-badge tipo-' + r.tipoTentante + '">' + r.tipoTentante + '</span></td><td><strong>' + Number(r.nota).toFixed(2) + '</strong></td></tr>';
+        });
+        html += '</table>';
+        document.getElementById('rankingConteudo').innerHTML = html;
+      })
+      .catch(mostrarErroGenerico);
+  }
+
+  // ---------------- ADMIN ----------------
+  function abrirAdmin() {
+    mostrarTela('tela-admin');
+    carregarListaLiberados();
+    carregarListaCasos();
+    carregarListaTranscricoes();
+  }
+
+  function carregarListaLiberados() {
+    chamarServidor('listarLiberados', sessaoAtual.email)
+      .then(function (lista) {
+        var html = lista.map(function (l) {
+          return '<div class="lista-liberados-item"><div class="topo"><strong>' + l.email + '</strong>' +
+            '<button class="btn-secundario" style="padding:4px 10px;font-size:11px" onclick="removerEmail(\'' + l.email + '\')">Remover</button></div>' +
+            '<div style="font-size:11px;color:var(--cinza)">' + (l.observacao || '') + ' · liberado em ' + new Date(l.dataLiberacao).toLocaleDateString('pt-BR') + '</div></div>';
+        }).join('') || '<p style="font-size:12px;color:var(--cinza)">Nenhum e-mail liberado ainda.</p>';
+        document.getElementById('listaLiberados').innerHTML = html;
+      })
+      .catch(mostrarErroGenerico);
+  }
+
+  function liberarNovoEmail() {
+    var email = document.getElementById('adminNovoEmail').value.trim();
+    var obs = document.getElementById('adminObservacao').value.trim();
+    if (!email) return;
+    chamarServidor('liberarEmail', sessaoAtual.email, email, obs)
+      .then(function () {
+        document.getElementById('adminNovoEmail').value = '';
+        document.getElementById('adminObservacao').value = '';
+        carregarListaLiberados();
+      })
+      .catch(mostrarErroGenerico);
+  }
+
+  function removerEmail(email) {
+    if (!confirm('Remover acesso de ' + email + '?')) return;
+    chamarServidor('removerLiberado', sessaoAtual.email, email).then(carregarListaLiberados).catch(mostrarErroGenerico);
+  }
+
+  function carregarListaCasos() {
+    chamarServidor('listarCasosReais', sessaoAtual.email)
+      .then(function (lista) {
+        var html = lista.map(function (c) {
+          return '<div class="lista-casos-item"><div class="topo"><strong>' + c.titulo + '</strong>' +
+            '<button class="btn-secundario" style="padding:4px 10px;font-size:11px" onclick="removerCaso(\'' + c.id + '\')">Remover</button></div>' +
+            '<div style="font-size:12px;margin-top:4px">' + (c.licaoResumida || '') + '</div>' +
+            '<div style="font-size:11px;color:var(--cinza);margin-top:4px">' + (c.ativo ? '✅ ativa na IA' : '⛔ inativa') + '</div></div>';
+        }).join('') || '<p style="font-size:12px;color:var(--cinza)">Nenhum caso cadastrado ainda.</p>';
+        document.getElementById('listaCasos').innerHTML = html;
+      })
+      .catch(mostrarErroGenerico);
+  }
+
+  function adicionarCaso() {
+    var dados = {
+      titulo: document.getElementById('casoTitulo').value.trim(),
+      relato: document.getElementById('casoRelato').value.trim(),
+      licaoResumida: document.getElementById('casoLicao').value.trim(),
+      ativo: document.getElementById('casoAtivo').checked,
+    };
+    if (!dados.titulo) return;
+    chamarServidor('adicionarCasoReal', sessaoAtual.email, dados)
+      .then(function () {
+        document.getElementById('casoTitulo').value = '';
+        document.getElementById('casoRelato').value = '';
+        document.getElementById('casoLicao').value = '';
+        document.getElementById('casoAtivo').checked = false;
+        carregarListaCasos();
+      })
+      .catch(mostrarErroGenerico);
+  }
+
+  function carregarListaTranscricoes() {
+    chamarServidor('listarTranscricoes', sessaoAtual.email)
+      .then(function (lista) {
+        var html = lista.map(function (t) {
+          return '<div class="lista-casos-item" style="cursor:pointer" onclick="abrirTranscricao(\'' + t.id + '\')">' +
+            '<div class="topo"><strong>' + (t.nome || t.email) + '</strong>' +
+            '<span class="tipo-badge tipo-' + t.tipoTentante + '">' + t.tipoTentante + '</span></div>' +
+            '<div style="font-size:11px;color:var(--cinza);margin-top:4px">' +
+            new Date(t.dataHora).toLocaleString('pt-BR') + ' · ' + t.dificuldade + ' · ' + t.resultado +
+            ' · nota <strong>' + Number(t.nota).toFixed(2) + '</strong></div></div>';
+        }).join('') || '<p style="font-size:12px;color:var(--cinza)">Nenhuma abordagem finalizada ainda.</p>';
+        document.getElementById('listaTranscricoes').innerHTML = html;
+      })
+      .catch(mostrarErroGenerico);
+  }
+
+  function abrirTranscricao(id) {
+    document.getElementById('detalheTranscricao').innerHTML = '<div class="carregando">carregando…</div>';
+    chamarServidor('obterTranscricao', sessaoAtual.email, id)
+      .then(function (t) {
+        var html = '<div style="margin-top:12px;border-top:1px solid var(--cinza-claro);padding-top:12px">' +
+          '<button class="btn-secundario" style="padding:4px 10px;font-size:11px" onclick="document.getElementById(\'detalheTranscricao\').innerHTML=\'\'">Fechar</button>' +
+          '<p style="font-size:12px;margin-top:8px"><strong>Fator principal:</strong> ' + (t.ficha.fatorPrincipal || '—') + '</p>' +
+          '<p style="font-size:12px"><strong>Fatores de risco:</strong> ' + ((t.ficha.fatoresRisco || []).join(' | ')) + '</p>' +
+          '<p style="font-size:12px"><strong>Fatores de proteção:</strong> ' + ((t.ficha.fatoresProtecao || []).join(' | ')) + '</p>' +
+          '<div class="chat-log" style="max-height:none;margin-top:10px">';
+        (t.historico || []).forEach(function (turno) {
+          html += '<div class="bolha bolha-' + (turno.papel === 'user' ? 'aluno' : 'tentante') + '">' + turno.texto + '</div>';
+        });
+        html += '</div></div>';
+        document.getElementById('detalheTranscricao').innerHTML = html;
+      })
+      .catch(mostrarErroGenerico);
+  }
+
+  function removerCaso(id) {
+    if (!confirm('Remover este caso?')) return;
+    chamarServidor('removerCasoReal', sessaoAtual.email, id).then(carregarListaCasos).catch(mostrarErroGenerico);
+  }
+</script>
+</body>
+</html>
