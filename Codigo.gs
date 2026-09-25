@@ -733,73 +733,57 @@ function chamarGeminiImagem_(prompt) {
 var DESCRICAO_IDADE_IMAGEM_ = { jovem_adulto: 'jovem adulta (entre 20 e 29 anos)', adulto: 'adulta (entre 30 e 45 anos)', meia_idade: 'de meia-idade (entre 46 e 60 anos)', idoso: 'idosa (acima de 60 anos)' };
 var DESCRICAO_RACA_IMAGEM_ = { branca: 'branca', preta: 'negra, de pele retinta', parda: 'parda, mestiça', indigena: 'indígena brasileira, traços indígenas', amarela: 'de ascendência asiática' };
 
-/**
- * Gera uma imagem ilustrativa e SEGURA da cena (ambiente + silhueta distante,
- * nunca o ato em si). Falha em silêncio (retorna null) — a imagem é só um
- * complemento visual opcional, nunca pode travar o início do caso.
- */
-function gerarImagemCena_(localDescricao, genero, faixaEtaria) {
-  try {
-    var generoTexto = genero === 'feminino' ? 'uma mulher' : 'um homem';
-    var idadeTexto = DESCRICAO_IDADE_IMAGEM_[faixaEtaria] || 'adulta';
-
-    var prompt =
-      'Fotografia fotorrealista (câmera profissional, iluminação e texturas naturalistas, nada de estilo ' +
-      'ilustração/pintura/desenho), para ambientar um treinamento FICTÍCIO de bombeiros em comunicação de ' +
-      'crise. Cena: ' + localDescricao + '. ' +
-      'Inclua, pequena e distante no enquadramento, uma silhueta humana genérica (pessoa ' + idadeTexto + '), de pé, ' +
-      'vista de costas ou de perfil, sem rosto detalhado, em POSTURA NEUTRA E AMBÍGUA — nunca debruçada sobre uma ' +
-      'borda, nunca em posição de queda ou salto, nunca sentada na beirada, apenas presente e parada na cena. ' +
-      'PROIBIDO representar: sangue, ferimentos, armas, comprimidos em primeiro plano, explosivos visíveis, cordas, ' +
-      'qualquer pose de queda/salto ou conteúdo gráfico, perturbador ou explícito. O objetivo é SÓ ambientar o ' +
-      'local, nunca ilustrar um ato. Paleta de cores discreta e levemente dessaturada, luz de fim de tarde ou ' +
-      'noturna, sem nenhum texto ou letreiro na imagem.';
-
-    return chamarGeminiImagem_(prompt);
-  } catch (e) {
-    Logger.log('gerarImagemCena_ exceção: ' + e.message);
-    return null;
-  }
-}
+// Detalhe visual discreto do ambiente, específico do método sorteado (nunca o
+// ato em si, só um objeto/posicionamento coerente com a leitura operacional de
+// cena que a guarnição já recebe em texto — ver TIPOS_TENTATIVA).
+var DETALHE_VISUAL_TENTATIVA_ = {
+  enforcamento: 'ao fundo, discreta, uma corda ou um cinto amarrado numa estrutura fixa do ambiente (viga, grade, parte alta) — nunca mostre a pessoa presa a ela, só o objeto amarrado',
+  precipitacao: 'o personagem está posicionado próximo a uma borda/beirada elevada do ambiente, com a queda visível ao fundo — nunca em pose de salto ou desequilíbrio',
+  intoxicacao_exogena: 'vários comprimidos soltos e cartelas de remédio vazias, visíveis sobre uma superfície próxima ao personagem (mesa, criado-mudo, chão)',
+  arma_branca: 'uma faca ou objeto cortante visível, pousado sobre uma superfície próxima ao personagem — nunca empunhado, nunca em riste',
+  autoimolacao_explosao: 'um botijão de gás visível no ambiente, próximo ao personagem',
+};
 
 /**
- * Gera um retrato SEGURO do próprio personagem (plano busto/meio-corpo, rosto
- * visível, características físicas reais do perfil sorteado), no MESMO local
- * da ocorrência (localDescricao — a mesma descrição usada na imagem de cena),
- * para ficar coerente com a primeira imagem. Mesmas regras de segurança:
- * nunca mostra o ato, nunca objetos/ferimentos, sempre postura neutra e vestida.
+ * Gera UMA ÚNICA imagem combinando personagem (rosto visível, em foco, centralizado)
+ * e ambiente (reconhecível atrás dele) — substitui as duas chamadas separadas que
+ * existiam antes (uma imagem de cena + um retrato), cortando pela metade o custo de
+ * geração de imagem por ocorrência. Inclui o detalhe visual do método sorteado
+ * (DETALHE_VISUAL_TENTATIVA_), sempre sem mostrar o ato em si. Falha em silêncio
+ * (retorna null) — a imagem é só um complemento visual opcional, nunca pode travar
+ * o início do caso.
  */
-function gerarImagemPersonagem_(genero, faixaEtaria, racaCor, localDescricao) {
+function gerarImagemCombinada_(genero, faixaEtaria, racaCor, localDescricao, tipoTentativaValor) {
   try {
     // "pessoa" é sempre gramaticalmente feminino em português (independe do
     // gênero da pessoa descrita) — por isso idade/raça sempre concordam no
     // feminino aqui. O gênero de verdade só entra explicitamente com "um
     // homem"/"uma mulher" + "brasileiro"/"brasileira" concordando entre si.
-    // (Bug anterior: "de um homem brasileira, jovem adulta" tinha concordância
-    // toda no feminino mesmo para personagens masculinos, o que muito provavelmente
-    // confundiu o modelo de imagem e gerou uma mulher por engano.)
     var ehFeminino = genero === 'feminino';
     var generoTexto = ehFeminino ? 'uma mulher' : 'um homem';
     var brasileiroTexto = ehFeminino ? 'brasileira' : 'brasileiro';
     var idadeTexto = DESCRICAO_IDADE_IMAGEM_[faixaEtaria] || 'adulta';
     var racaTexto = DESCRICAO_RACA_IMAGEM_[racaCor] || 'brasileira';
+    var detalheMetodo = DETALHE_VISUAL_TENTATIVA_[tipoTentativaValor] || '';
 
     var prompt =
-      'Retrato fotorrealista em plano meio-corpo (câmera profissional, iluminação naturalista, nada de ' +
-      'ilustração/pintura/desenho), de ' + generoTexto + ' ' + brasileiroTexto + ': uma pessoa ' + idadeTexto + ', ' + racaTexto + '. ' +
-      'CENÁRIO DE FUNDO (obrigatório, com profundidade de campo rasa — a pessoa em foco, o cenário atrás dela ' +
-      'ligeiramente desfocado mas claramente reconhecível): ' + localDescricao + '. Roupas condizentes com estar ' +
-      'realmente NESSE local e situação (dia a dia, informais, nada de uniforme nem traje formal). ' +
-      'Expressão facial neutra a cansada/abatida, olhar levemente distante, mas ' +
-      'SEM chorar, sem ferimentos, sem sangue, sem qualquer sinal de violência ou autolesão visível. Postura ' +
-      'parada, de pé ou sentada, mãos visíveis e vazias — NUNCA segurando objetos (comprimidos, lâminas, cordas, ' +
-      'armas ou qualquer meio letal), NUNCA em pose de queda/salto/enforcamento. Objetivo: retrato humano ' +
-      'digno e realista para treinamento FICTÍCIO de comunicação de crise de bombeiros — nunca sensacionalista, ' +
-      'nunca ilustrando o ato em si. Sem texto ou letreiro na imagem.';
+      'Fotografia fotorrealista (câmera profissional, iluminação naturalista, nada de ilustração/pintura/desenho), ' +
+      'para ambientar um treinamento FICTÍCIO de bombeiros em comunicação de crise. Retrato de ' + generoTexto + ' ' +
+      brasileiroTexto + ': uma pessoa ' + idadeTexto + ', ' + racaTexto + ', em plano meio-corpo, CENTRALIZADA e EM ' +
+      'FOCO NÍTIDO no enquadramento, rosto claramente visível. Atrás dela, com boa profundidade de campo (o ' +
+      'ambiente reconhecível, não apenas borrado ao ponto de sumir), o cenário: ' + localDescricao + '. ' +
+      (detalheMetodo ? 'No ambiente, ' + detalheMetodo + '. ' : '') +
+      'Roupas condizentes com estar realmente nesse local e situação (dia a dia, informais, nada de uniforme nem ' +
+      'traje formal). Expressão facial neutra a cansada/abatida, olhar levemente distante, mas SEM chorar, sem ' +
+      'ferimentos, sem sangue, sem qualquer sinal de violência ou autolesão visível no corpo dela. Mãos visíveis e ' +
+      'vazias — NUNCA segurando objetos (comprimidos, lâminas, cordas, armas ou qualquer meio letal), NUNCA em ' +
+      'pose de queda/salto/enforcamento. Objetivo: imagem humana digna e realista para treinamento FICTÍCIO de ' +
+      'comunicação de crise de bombeiros — nunca sensacionalista, nunca ilustrando o ato em si, só ambientando a ' +
+      'cena e o personagem juntos numa única imagem coerente. Sem texto ou letreiro na imagem.';
 
     return chamarGeminiImagem_(prompt);
   } catch (e) {
-    Logger.log('gerarImagemPersonagem_ exceção: ' + e.message);
+    Logger.log('gerarImagemCombinada_ exceção: ' + e.message);
     return null;
   }
 }
@@ -1301,6 +1285,14 @@ function instrucaoDoutrina_() {
     'proibido (só a guarnição no local, por segurança da cena). Se o aluno aceitar/prometer trazer um terceiro até ' +
     'a cena, isso é um erro grave de segurança. É permitido dizer que, depois que o tentante estiver bem e em ' +
     'segurança, ele PODERÁ conversar com essa pessoa depois — só não pode ser a guarnição trazendo alguém até a cena.\n\n' +
+    'SAÍDA DIGNA — SÓ O ABORDADOR OFERECE O HOSPITAL: o personagem NUNCA se oferece, sugere ou pede pra ir ao ' +
+    'hospital por conta própria — quem propõe isso é sempre o ALUNO, essa é a técnica de Saída Digna. O personagem, ' +
+    'no máximo, pode verbalizar desamparo ou desorientação ("não sei mais o que fazer", "não sei pra onde ir", "não ' +
+    'aguento mais assim"), nunca proatividade de buscar tratamento sozinho. Em dificuldades mais altas, ANTES de ' +
+    'aceitar, o personagem pode levantar vergonha/exposição como obstáculo ("tenho vergonha de ir", "todo mundo vai ' +
+    'ver", "o vizinho vai comentar") — nesse caso, o aluno só ganha o ponto completo de Saída Digna se reconhecer ' +
+    'essa vergonha e garantir privacidade concreta (ambulância disponível, área isolada, ninguém por perto vai ver) ' +
+    'ANTES de oferecer levar ao hospital.\n\n' +
     
     'VARIEDADE DE FATORES DE RISCO/PROTEÇÃO (doutrina do curso — o suicídio é multideterminado; sorteie o(s) ' +
     'fator(es) real(is) do personagem DENTRE categorias diferentes a cada caso, não repita sempre o mesmo tipo): ' +
@@ -1443,20 +1435,15 @@ function iniciarCaso(email, dificuldade) {
     .filter(function (t) { return t; })
     .join(' ');
 
-  // Imagens são só um complemento visual opcional — nunca podem travar o
-  // início do caso se falharem, demorarem ou forem recusadas pelo filtro de
-  // segurança. Duas imagens: uma do AMBIENTE, uma do PERSONAGEM (retrato).
-  var imagemCena = null;
+  // Imagem é só um complemento visual opcional — nunca pode travar o início do
+  // caso se falhar, demorar ou for recusada pelo filtro de segurança. Uma única
+  // imagem (personagem em foco + ambiente reconhecível atrás dele), não mais
+  // duas — ver gerarImagemCombinada_.
+  var imagem = null;
   try {
-    imagemCena = gerarImagemCena_(localSorteado.descricaoParaImagem, generoSorteado, faixaEtariaSorteada);
+    imagem = gerarImagemCombinada_(generoSorteado, faixaEtariaSorteada, racaCorSorteada, localSorteado.descricaoParaImagem, tipoTentativaSorteada.valor);
   } catch (e) {
-    imagemCena = null;
-  }
-  var imagemPersonagem = null;
-  try {
-    imagemPersonagem = gerarImagemPersonagem_(generoSorteado, faixaEtariaSorteada, racaCorSorteada, localSorteado.descricaoParaImagem);
-  } catch (e) {
-    imagemPersonagem = null;
+    imagem = null;
   }
 
   return {
@@ -1465,8 +1452,7 @@ function iniciarCaso(email, dificuldade) {
     narracao: textoNarracao,
     primeiroContatoTipo: intro.primeiroContatoTipo === 'fala' ? 'fala' : 'silencio',
     primeiroContatoTexto: intro.primeiroContatoTexto || '',
-    imagemCena: imagemCena,
-    imagemPersonagem: imagemPersonagem,
+    imagem: imagem,
     // Gênero/idade da VOZ do personagem — não revela perfil comportamental
     // (agressivo/depressivo/psicótico), que continua oculto até "Avaliar".
     voz: {
@@ -1572,7 +1558,10 @@ function instrucaoTurno_(sessao) {
     'foi cedo demais e o personagem recusou).\n' +
     '- usouDesistenciaOuSaidaDigna = true SOMENTE se, NESTA fala, o aluno usou a técnica de desistência ' +
     'impositiva (propõe a saída segura sem impor) OU saída digna (enquadra aceitar ajuda como força, não ' +
-    'fraqueza) — qualquer um dos dois conta.\n' +
+    'fraqueza) — qualquer um dos dois conta. NUNCA marque true se foi o PERSONAGEM quem se ofereceu para ir ao ' +
+    'hospital por conta própria — a oferta tem que partir do aluno. Se o personagem levantou vergonha/exposição ' +
+    'como obstáculo, só conta se o aluno garantiu privacidade (ambulância, área isolada, ninguém vendo) antes de ' +
+    'oferecer o hospital.\n' +
     '- eventoNegativo = true se o aluno cometeu, nesta fala, qualquer um dos erros que a doutrina já lista como ' +
     '"reaja mal" (insistência no sofrimento, julgamento, sermão, conselho impositivo, minimizar, garantia vazia, ' +
     'interrogatório acelerado, dominar a fala) OU um dos gatilhos de regressão (palavra "ajuda"/"ajudar", fator ' +
