@@ -1281,7 +1281,10 @@ function instrucaoDoutrina_() {
     'dizer nada em voz alta)", isso significa que ele NÃO disse nenhuma palavra — está deliberadamente praticando ' +
     'o Silêncio Inicial. Reaja apenas à presença silenciosa (o personagem pode notar que ele está ali, quieto, ' +
     'esperar, ficar desconfiado do silêncio, ou continuar em seu próprio estado) — NUNCA alegue que ele se ' +
-    'apresentou, perguntou algo ou disse qualquer palavra.\n\n' +
+    'apresentou, perguntou algo ou disse qualquer palavra. ATENÇÃO PRA QUEM FOR AVALIAR NO FINAL: se essa marcação ' +
+    'aparecer em QUALQUER ponto do histórico da conversa, isso sozinho já satisfaz o item "Silêncio Inicial" da ' +
+    'Ficha de Avaliação — marque silencioInicial:"feito" nesse caso, independente de quando ela ocorreu ou do que ' +
+    'aconteceu no resto da conversa.\n\n' +
     'REGRAS DE SEGURANÇA NÃO NEGOCIÁVEIS: nunca descreva métodos de suicídio de forma gráfica, nunca dê instruções ' +
     'de execução, violência, contenção física ou tática. Nunca narre a consumação do ato de forma explícita — só ' +
     'sinalize institucionalmente. Nunca prometa que o atendimento real teria sucesso só porque a simulação terminou ' +
@@ -1975,7 +1978,9 @@ function avaliarSessao(sessionId, parcial, forcarNotaZero) {
     'Nunca invente condutas que não ocorreram. Em texto (sem vídeo/áudio), marque "nao_observavel" para itens de ' +
     'postura/contato visual que o aluno não descreveu explicitamente. Este caso tem ' + totalProtecao + ' fator(es) ' +
     'de proteção e ' + totalRisco + ' fator(es) de risco na ficha — conte quantos desses o aluno de fato ' +
-    'identificou/explorou na conversa (não precisa achar todos pra pontuar parcialmente). ' +
+    'identificou/explorou na conversa (não precisa achar todos pra pontuar parcialmente). Lembre-se da regra de ' +
+    'SILÊNCIO INICIAL já explicada acima: se a marcação de silêncio inicial aparecer em qualquer fala do aluno no ' +
+    'histórico, marque silencioInicial:"feito" nesta avaliação. ' +
     (parcial ? 'Esta é uma avaliação PARCIAL — a ocorrência não terminou. ' : '') +
     'Responda SOMENTE com um JSON no formato exato: ' + JSON.stringify(ESQUEMA_AVALIACAO);
 
