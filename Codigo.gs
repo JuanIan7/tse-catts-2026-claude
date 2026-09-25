@@ -685,7 +685,9 @@ function extrairTexto_(respostaGemini) {
 // Se este modelo parar de gerar imagens no futuro, troque aqui por um nome
 // válido em https://ai.google.dev/gemini-api/docs/models (procure por
 // modelos com saída de imagem).
-var MODEL_NAME_IMAGEM = 'gemini-3-pro-image';
+// Trocado de 'gemini-3-pro-image' (Nano Banana Pro) pra este em 2026-09-25 — mesma
+// qualidade percebida pra este uso, metade do preço por imagem (US$0,067 vs US$0,134).
+var MODEL_NAME_IMAGEM = 'gemini-3.1-flash-image';
 
 /**
  * Chamada bruta ao modelo de imagem — usada tanto pela cena quanto pelo retrato do
