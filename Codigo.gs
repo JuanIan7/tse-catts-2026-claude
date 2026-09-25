@@ -1187,6 +1187,13 @@ function configTempoDificuldade_(dificuldade) {
   return CONFIG_TEMPO_DIFICULDADE_[dificuldade] || CONFIG_TEMPO_DIFICULDADE_.media;
 }
 
+// Texto fixo que representa a técnica de Silêncio Inicial (o aluno opta por não dizer nada, de
+// propósito) — mandado pelo botão "Silêncio Inicial" do front-end via enviarFala. O crédito do
+// item "Silêncio Inicial" na nota final NÃO depende da IA reconhecer isso sozinha (ela já errou
+// isso 2x) — enviarFala marca sessao.silencioInicialFeito de forma determinística no código
+// sempre que a fala for exatamente este texto, e avaliarSessao força o veredito, ver mais abaixo.
+var MARCADOR_SILENCIO_INICIAL_ = '(o abordador opta por um momento de silêncio inicial — permanece presente, quieto e observando atentamente, sem dizer nada em voz alta)';
+
 // ============================================================
 // INSTRUÇÕES-BASE (doutrina CATTS, resumida para uso em toda chamada)
 // ============================================================
@@ -1278,15 +1285,12 @@ function instrucaoDoutrina_() {
     'trate isso como o aluno estando em silêncio proposital — NUNCA invente nome, pergunta, apresentação ou ' +
     'qualquer frase que ele não disse de verdade. Reaja só à presença silenciosa dele (o personagem pode notar o ' +
     'silêncio, ficar desconfortável ou curioso com ele, ou simplesmente continuar no próprio estado emocional).\n' +
-    'SILÊNCIO INICIAL (técnica da doutrina): se a fala mais recente do aluno for exatamente a marcação "(o ' +
-    'abordador opta por um momento de silêncio inicial — permanece presente, quieto e observando atentamente, sem ' +
-    'dizer nada em voz alta)", isso significa que ele NÃO disse nenhuma palavra — está deliberadamente praticando ' +
-    'o Silêncio Inicial. Reaja apenas à presença silenciosa (o personagem pode notar que ele está ali, quieto, ' +
-    'esperar, ficar desconfiado do silêncio, ou continuar em seu próprio estado) — NUNCA alegue que ele se ' +
-    'apresentou, perguntou algo ou disse qualquer palavra. ATENÇÃO PRA QUEM FOR AVALIAR NO FINAL: se essa marcação ' +
-    'aparecer em QUALQUER ponto do histórico da conversa, isso sozinho já satisfaz o item "Silêncio Inicial" da ' +
-    'Ficha de Avaliação — marque silencioInicial:"feito" nesse caso, independente de quando ela ocorreu ou do que ' +
-    'aconteceu no resto da conversa.\n\n' +
+    'SILÊNCIO INICIAL (técnica da doutrina): se a fala mais recente do aluno for exatamente a marcação "' +
+    MARCADOR_SILENCIO_INICIAL_ + '", isso significa que ele NÃO disse nenhuma palavra — está deliberadamente ' +
+    'praticando o Silêncio Inicial. Reaja apenas à presença silenciosa (o personagem pode notar que ele está ali, ' +
+    'quieto, esperar, ficar desconfiado do silêncio, ou continuar em seu próprio estado) — NUNCA alegue que ele se ' +
+    'apresentou, perguntou algo ou disse qualquer palavra. (O crédito desse item na nota final é controlado pelo ' +
+    'código, não depende de você reportar isso na avaliação.)\n\n' +
     'REGRAS DE SEGURANÇA NÃO NEGOCIÁVEIS: nunca descreva métodos de suicídio de forma gráfica, nunca dê instruções ' +
     'de execução, violência, contenção física ou tática. Nunca narre a consumação do ato de forma explícita — só ' +
     'sinalize institucionalmente. Nunca prometa que o atendimento real teria sucesso só porque a simulação terminou ' +
@@ -1668,6 +1672,9 @@ function enviarFala(sessionId, falaAluno) {
   if (sessao.status !== 'em_andamento') {
     throw new Error('Esta simulação já foi encerrada. Inicie uma nova ocorrência.');
   }
+  // Marcado no código, não depende da IA relatar isso certo na avaliação final (ver
+  // avaliarSessao) — é o único jeito confiável de creditar o item Silêncio Inicial.
+  if (falaAluno === MARCADOR_SILENCIO_INICIAL_) sessao.silencioInicialFeito = true;
 
   var instrucao = instrucaoTurno_(sessao) +
     ' Responda SOMENTE com um JSON no formato exato: ' +
@@ -1980,14 +1987,15 @@ function avaliarSessao(sessionId, parcial, forcarNotaZero) {
     'Nunca invente condutas que não ocorreram. Em texto (sem vídeo/áudio), marque "nao_observavel" para itens de ' +
     'postura/contato visual que o aluno não descreveu explicitamente. Este caso tem ' + totalProtecao + ' fator(es) ' +
     'de proteção e ' + totalRisco + ' fator(es) de risco na ficha — conte quantos desses o aluno de fato ' +
-    'identificou/explorou na conversa (não precisa achar todos pra pontuar parcialmente). Lembre-se da regra de ' +
-    'SILÊNCIO INICIAL já explicada acima: se a marcação de silêncio inicial aparecer em qualquer fala do aluno no ' +
-    'histórico, marque silencioInicial:"feito" nesta avaliação. ' +
+    'identificou/explorou na conversa (não precisa achar todos pra pontuar parcialmente). ' +
     (parcial ? 'Esta é uma avaliação PARCIAL — a ocorrência não terminou. ' : '') +
     'Responda SOMENTE com um JSON no formato exato: ' + JSON.stringify(ESQUEMA_AVALIACAO);
 
   var turnos = sessao.historico.concat([{ papel: 'user', texto: 'AVALIAR' }]);
   var avaliacaoIA = chamarGeminiJson_(instrucao, turnos);
+  // Determinístico, não depende da IA: se o aluno usou o botão de Silêncio Inicial em algum
+  // momento desta sessão, o item é creditado no código — a IA já errou esse veredito 2x.
+  if (sessao.silencioInicialFeito) avaliacaoIA.silencioInicial = 'feito';
 
   var calculo = calcularNota_(avaliacaoIA, sessao.ficha, sessao.errosGravesSessao);
   // O detalhamento item a item continua real (mostra o que teria sido pontuado),

@@ -301,6 +301,9 @@
       </label>
     </div>
     <div class="linha-botoes">
+      <button class="btn-primario" id="btnEncerrarEAvaliar" onclick="encerrarEAvaliar()" title="Encerra a ocorrência agora e mostra a nota com o que já foi feito até este ponto">Encerrar e Avaliar</button>
+    </div>
+    <div class="linha-botoes">
       <button class="btn-secundario" onclick="mostrarTela('tela-dificuldade')">Novo Cenário</button>
       <button class="btn-secundario" onclick="mostrarTela('tela-menu')">Voltar ao Menu</button>
     </div>
@@ -1284,6 +1287,23 @@
    * quebrar a tela silenciosamente: mostra uma mensagem clara em vez de
    * travar sem nada aparecer.
    */
+  /** Encerra a ocorrência manualmente e mostra a nota parcial com o que já foi feito até
+   * agora — útil quando a conversa não fecha sozinha (deveria, mas às vezes falha) e o aluno
+   * já cobriu tudo que precisava; se faltar alguma ferramenta/fator, o relatório mostra o quê. */
+  function encerrarEAvaliar() {
+    if (!casoAtual.sessionId) return;
+    if (!confirm('Encerrar esta abordagem agora e ver a nota com o que já foi feito até aqui?')) return;
+    definirPodeFalar_(false);
+    atualizarStatus('⏳', 'Calculando avaliação...', false);
+    chamarServidor('avaliarSessao', casoAtual.sessionId, true)
+      .then(function (resp) { mostrarRelatorio(resp); })
+      .catch(function (e) {
+        mostrarErroGenerico(e);
+        atualizarStatus('🎙️', 'Sua vez de falar', false);
+        definirPodeFalar_(true);
+      });
+  }
+
   function mostrarRelatorioOuErro_(resp) {
     if (resp.avaliacaoAutomatica) {
       mostrarRelatorio(resp.avaliacaoAutomatica);
