@@ -156,7 +156,10 @@
     .barra-gravar.gravando { background: var(--marca); color: var(--preto); border-color: var(--marca-escura); }
     .barra-gravar.cancelando { background: var(--alerta); color: var(--branco); border-color: #7a1c1c; }
     .barra-gravar.indisponivel, .barra-gravar.travada { opacity: 0.55; }
+    .barra-gravar.mic-aberto-ouvindo { background: var(--verde-fundo); border-color: var(--verde); color: var(--verde); }
     #btnDigitar { flex: 0 0 auto; font-size: 20px; padding: 0 16px; }
+    #btnMicAberto { flex: 0 0 auto; font-size: 20px; padding: 0 16px; }
+    #btnMicAberto.ativo { background: var(--verde); color: var(--branco); border-color: var(--verde); }
     @keyframes pulsar { 0%,100%{opacity:1;} 50%{opacity:0.6;} }
     table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 8px; }
     th, td { text-align: left; padding: 7px 8px; border-bottom: 1px solid #eae8e4; }
@@ -284,6 +287,7 @@
         <span class="barra-texto" id="barraTexto">Segure para falar</span>
       </div>
       <button class="btn-secundario" id="btnDigitar" onclick="alternarModoDigitar()" title="Digitar em vez de falar">⌨️</button>
+      <button class="btn-secundario" id="btnMicAberto" onclick="alternarMicAberto_()" title="Microfone aberto — fale sem segurar o botão">🎧</button>
     </div>
     <div class="entrada-chat escondido" id="entradaTexto">
       <textarea id="campoFala" placeholder="Fale como o abordador..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();enviarFalaAluno();}"></textarea>
@@ -516,18 +520,24 @@
     }
   }
 
+  // true só enquanto a FALA DO TENTANTE está tocando (nunca durante o narrador) —
+  // usado pelo microfone aberto pra saber quando uma interrupção é possível.
+  var personagemFalando_ = false;
+
   /** Voz do PERSONAGEM: tenta a voz natural do Google Cloud primeiro; se falhar, usa a do navegador. */
   function falarComoTentante(textoCompleto, aoComecar, aoTerminar) {
     if (!document.getElementById('chkVoz').checked) { if (aoTerminar) aoTerminar(); return; }
     var texto = textoCompleto.replace(/\([^)]*\)/g, '').trim(); // remove sinais entre parênteses da fala
     if (!texto) { if (aoTerminar) aoTerminar(); return; }
+    var comecar = function () { personagemFalando_ = true; if (aoComecar) aoComecar(); };
+    var terminar = function () { personagemFalando_ = false; if (aoTerminar) aoTerminar(); };
     var voz = casoAtual.voz || { genero: 'masculino', faixaEtaria: 'adulto' };
     chamarServidor('sintetizarTentante', texto, voz.genero, voz.faixaEtaria)
       .then(function (b64) {
-        if (b64) { tocarAudioBase64_(b64, aoComecar, aoTerminar); }
-        else { falarComoTentanteNavegador_(texto, aoComecar, aoTerminar); }
+        if (b64) { tocarAudioBase64_(b64, comecar, terminar); }
+        else { falarComoTentanteNavegador_(texto, comecar, terminar); }
       })
-      .catch(function () { falarComoTentanteNavegador_(texto, aoComecar, aoTerminar); });
+      .catch(function () { falarComoTentanteNavegador_(texto, comecar, terminar); });
   }
 
   /** Reserva: síntese de voz do próprio navegador, só usada se o Google Cloud TTS falhar. */
@@ -598,18 +608,36 @@
   var xInicialPressao_ = 0;
   var podeFalarAgora_ = true;
 
+  // ---------------- MICROFONE ABERTO (sem segurar botão, detecta fala sozinho) ----------------
+  var modoMicAberto_ = false;
+  var streamMicAberto_ = null;
+  var contextoMicAberto_ = null;
+  var analisadorMicAberto_ = null;
+  var valoresMicAberto_ = null;
+  var monitorMicAberto_ = null;
+  var ultimaVozEm_ = 0;
+  var sequenciaInterrupcao_ = 0;
+
   function atualizarBarra_(estado) {
     var icone = document.getElementById('barraIcone');
     var texto = document.getElementById('barraTexto');
-    barraGravarEl.classList.remove('gravando', 'cancelando');
+    barraGravarEl.classList.remove('gravando', 'cancelando', 'mic-aberto-ouvindo');
     if (estado === 'gravando') {
       barraGravarEl.classList.add('gravando');
       icone.textContent = '🔴';
-      texto.textContent = 'Gravando... solte para enviar';
+      texto.textContent = modoMicAberto_ ? 'Estou ouvindo você...' : 'Gravando... solte para enviar';
     } else if (estado === 'cancelando') {
       barraGravarEl.classList.add('cancelando');
       icone.textContent = '❌';
       texto.textContent = 'Solte para cancelar';
+    } else if (estado === 'mic-aberto') {
+      barraGravarEl.classList.add('mic-aberto-ouvindo');
+      icone.textContent = '🎧';
+      texto.textContent = 'Microfone aberto — fale quando quiser';
+    } else if (modoMicAberto_) {
+      barraGravarEl.classList.add('mic-aberto-ouvindo');
+      icone.textContent = '🎧';
+      texto.textContent = 'Microfone aberto — aguardando';
     } else {
       icone.textContent = '🎤';
       texto.textContent = 'Segure para falar';
@@ -651,7 +679,7 @@
   }
 
   function iniciarPressaoAudio_(e) {
-    if (!suportaGravacao_ || gravando || !podeFalarAgora_) return;
+    if (!suportaGravacao_ || gravando || !podeFalarAgora_ || modoMicAberto_) return;
     e.preventDefault();
     // Prende o ponteiro neste elemento: sem isso, no iOS o dedo "sai" da
     // barra ao arrastar e o pointerup nunca chega até nós.
@@ -724,6 +752,118 @@
     window.addEventListener('pointercancel', soltarPressaoAudio_);
   }
 
+  /** Para a fala do tentante no meio, avisa o servidor e libera o aluno pra falar na hora. */
+  function interromperFalaTentante_() {
+    if (!personagemFalando_) return false;
+    personagemFalando_ = false;
+    try { window.speechSynthesis && window.speechSynthesis.cancel(); } catch (e) {}
+    if (audioPlayerEl_) {
+      audioPlayerEl_.onplay = null; audioPlayerEl_.onended = null; audioPlayerEl_.onerror = null;
+      audioPlayerEl_.pause();
+    }
+    if (casoAtual.sessionId) chamarServidor('registrarInterrupcao', casoAtual.sessionId).catch(function () {});
+    atualizarStatus('🎙️', 'Você interrompeu — pode falar', false);
+    definirPodeFalar_(true);
+    return true;
+  }
+
+  function alternarMicAberto_() {
+    if (modoMicAberto_) { desligarMicAberto_(); return; }
+    if (!suportaGravacao_) { alert('Este navegador não permite microfone aberto. Use segurar-para-falar ou o teclado.'); return; }
+    ligarMicAberto_();
+  }
+
+  function ligarMicAberto_() {
+    navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true } })
+      .then(function (stream) {
+        var ContextoAudio = window.AudioContext || window.webkitAudioContext;
+        if (!ContextoAudio) { pararStreamAudio_(stream); alert('Este navegador não suporta microfone aberto.'); return; }
+        streamMicAberto_ = stream;
+        contextoMicAberto_ = new ContextoAudio();
+        contextoMicAberto_.resume();
+        analisadorMicAberto_ = contextoMicAberto_.createAnalyser();
+        analisadorMicAberto_.fftSize = 1024;
+        contextoMicAberto_.createMediaStreamSource(stream).connect(analisadorMicAberto_);
+        valoresMicAberto_ = new Uint8Array(analisadorMicAberto_.fftSize);
+        modoMicAberto_ = true;
+        ultimaVozEm_ = Date.now();
+        sequenciaInterrupcao_ = 0;
+        var botao = document.getElementById('btnMicAberto');
+        if (botao) botao.classList.add('ativo');
+        atualizarBarra_('mic-aberto');
+        monitorMicAberto_ = window.setInterval(monitorarMicAberto_, 150);
+      })
+      .catch(function (err) {
+        alert('Não foi possível ativar o microfone aberto (' + (err && err.message ? err.message : err) + ').');
+      });
+  }
+
+  function desligarMicAberto_() {
+    modoMicAberto_ = false;
+    if (monitorMicAberto_ !== null) { window.clearInterval(monitorMicAberto_); monitorMicAberto_ = null; }
+    if (gravadorAudio_ && gravadorAudio_.state === 'recording') gravadorAudio_.stop();
+    if (contextoMicAberto_) { contextoMicAberto_.close().catch(function () {}); contextoMicAberto_ = null; }
+    analisadorMicAberto_ = null;
+    pararStreamAudio_(streamMicAberto_);
+    streamMicAberto_ = null;
+    var botao = document.getElementById('btnMicAberto');
+    if (botao) botao.classList.remove('ativo');
+    atualizarBarra_('ocioso');
+  }
+
+  function monitorarMicAberto_() {
+    if (!modoMicAberto_ || !analisadorMicAberto_) return;
+    analisadorMicAberto_.getByteTimeDomainData(valoresMicAberto_);
+    var soma = 0;
+    for (var i = 0; i < valoresMicAberto_.length; i++) soma += Math.abs(valoresMicAberto_[i] - 128);
+    var nivel = soma / valoresMicAberto_.length;
+    var agora = Date.now();
+    if (personagemFalando_) {
+      // Sem fones, exige voz alta e sustentada (2 medições seguidas, ~300ms) antes de
+      // considerar interrupção real — evita que eco/ruído ambiente dispare falso positivo.
+      if (nivel > 20) {
+        sequenciaInterrupcao_ += 1;
+        if (sequenciaInterrupcao_ >= 2 && (!gravadorAudio_ || gravadorAudio_.state !== 'recording')) {
+          sequenciaInterrupcao_ = 0;
+          interromperFalaTentante_();
+          iniciarGravacaoMicAberto_();
+        }
+      } else {
+        sequenciaInterrupcao_ = 0;
+      }
+      return;
+    }
+    sequenciaInterrupcao_ = 0;
+    if (!podeFalarAgora_) return; // aguardando resposta do servidor
+    if (nivel > 12) {
+      ultimaVozEm_ = agora;
+      if (!gravadorAudio_ || gravadorAudio_.state !== 'recording') iniciarGravacaoMicAberto_();
+    }
+    if (gravadorAudio_ && gravadorAudio_.state === 'recording' && agora - ultimaVozEm_ > 1200) gravadorAudio_.stop();
+  }
+
+  function iniciarGravacaoMicAberto_() {
+    if (!streamMicAberto_ || (gravadorAudio_ && gravadorAudio_.state === 'recording')) return;
+    chunksAudio_ = [];
+    var opcoes = mimeTypeGravacao_ ? { mimeType: mimeTypeGravacao_ } : undefined;
+    gravadorAudio_ = new MediaRecorder(streamMicAberto_, opcoes);
+    gravadorAudio_.ondataavailable = function (ev) { if (ev.data && ev.data.size > 0) chunksAudio_.push(ev.data); };
+    gravadorAudio_.onstop = function () {
+      var chunks = chunksAudio_;
+      chunksAudio_ = [];
+      var mimeTypeUsado = (gravadorAudio_ && gravadorAudio_.mimeType) || mimeTypeGravacao_ || 'audio/mp4';
+      gravadorAudio_ = null;
+      atualizarBarra_(modoMicAberto_ ? 'mic-aberto' : 'ocioso');
+      if (!chunks.length) return;
+      var blob = new Blob(chunks, { type: mimeTypeUsado });
+      if (blob.size < 300) return; // ruído/silêncio, não vale a pena enviar
+      enviarFalaAudioGravado_(blob);
+    };
+    gravadorAudio_.start(250);
+    atualizarBarra_('gravando');
+    window.setTimeout(function () { if (gravadorAudio_ && gravadorAudio_.state === 'recording') gravadorAudio_.stop(); }, 90000);
+  }
+
   function enviarFalaAudioGravado_(blob) {
     if (!casoAtual.sessionId) return;
     definirPodeFalar_(false);
@@ -755,12 +895,17 @@
 
   function alternarModoDigitar(forcarDigitar) {
     var mostrarTexto = forcarDigitar === true || document.getElementById('entradaTexto').classList.contains('escondido');
+    if (mostrarTexto && modoMicAberto_) desligarMicAberto_();
     document.getElementById('entradaTexto').classList.toggle('escondido', !mostrarTexto);
     document.querySelector('.entrada-audio').classList.toggle('escondido', mostrarTexto);
   }
 
   function mostrarTela(id) {
-    if (id !== 'tela-simulador') { pararCronometro_(); limparCasoAtivo_(); }
+    if (id !== 'tela-simulador') {
+      pararCronometro_();
+      limparCasoAtivo_();
+      if (modoMicAberto_) desligarMicAberto_();
+    }
     document.querySelectorAll('main > section').forEach(function (s) { s.classList.add('escondido'); });
     document.getElementById(id).classList.remove('escondido');
   }
