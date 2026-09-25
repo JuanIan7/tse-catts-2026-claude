@@ -285,6 +285,7 @@
       </div>
       <button class="btn-secundario" id="btnDigitar" onclick="alternarModoDigitar()" title="Digitar em vez de falar">⌨️</button>
       <button class="btn-secundario" id="btnMicAberto" onclick="alternarMicAberto_()" title="Microfone aberto — fale sem segurar o botão">🎧</button>
+      <button class="btn-secundario" id="btnSilencioInicial" onclick="realizarSilencioInicial()" title="Registrar um momento de silêncio inicial, sem falar nada">🤐</button>
     </div>
     <div class="entrada-chat escondido" id="entradaTexto">
       <textarea id="campoFala" placeholder="Fale como o abordador..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();enviarFalaAluno();}"></textarea>
@@ -645,6 +646,8 @@
     podeFalarAgora_ = pode;
     barraGravarEl.classList.toggle('travada', !pode);
     document.getElementById('btnEnviar').disabled = !pode;
+    var btnSilencio = document.getElementById('btnSilencioInicial');
+    if (btnSilencio) btnSilencio.disabled = !pode;
   }
 
   if (!suportaGravacao_) {
@@ -704,6 +707,9 @@
             return;
           }
           var blob = new Blob(chunks, { type: (gravadorAudio_ && gravadorAudio_.mimeType) || mimeTypeGravacao_ || 'audio/mp4' });
+          // Toque muito rápido/quase silencioso não pode virar uma fala "vazia" pro
+          // tentante reagir e inventar conteúdo — use o botão de Silêncio Inicial pra isso.
+          if (blob.size < 500) { logAudioDebug_('🎙️ gravação muito curta (' + blob.size + ' bytes) — não enviada'); return; }
           enviarFalaAudioGravado_(blob);
         };
         gravadorAudio_.start();
@@ -832,13 +838,18 @@
     }
     sequenciaInterrupcao_ = 0;
     if (!podeFalarAgora_) return; // aguardando resposta do servidor
-    if (nivel > 12) {
+    var jaGravando = gravadorAudio_ && gravadorAudio_.state === 'recording';
+    // Uma vez já gravando, exige MUITO menos volume pra continuar contando como "ainda
+    // falando" (6 em vez de 12) — trechos mais baixos de uma frase (fim de palavra,
+    // respiração) não podem derrubar o limiar de quem já está no meio de uma fala.
+    var limiarVoz = jaGravando ? 6 : 12;
+    if (nivel > limiarVoz) {
       ultimaVozEm_ = agora;
-      if (!gravadorAudio_ || gravadorAudio_.state !== 'recording') iniciarGravacaoMicAberto_();
+      if (!jaGravando) iniciarGravacaoMicAberto_();
     }
-    // 2500ms de silêncio (não 1200ms) — uma pausa pra respirar ou pensar no meio de
-    // uma frase mais longa não pode ser confundida com o fim da fala do aluno.
-    if (gravadorAudio_ && gravadorAudio_.state === 'recording' && agora - ultimaVozEm_ > 2500) gravadorAudio_.stop();
+    // 3000ms de silêncio sustentado (não 1200ms) — uma pausa pra respirar ou pensar no
+    // meio de uma frase mais longa não pode ser confundida com o fim da fala do aluno.
+    if (jaGravando && agora - ultimaVozEm_ > 3000) gravadorAudio_.stop();
   }
 
   function iniciarGravacaoMicAberto_() {
@@ -863,6 +874,40 @@
     window.setTimeout(function () { if (gravadorAudio_ && gravadorAudio_.state === 'recording') gravadorAudio_.stop(); }, 90000);
   }
 
+  // Texto fixo que representa a técnica de Silêncio Inicial (o aluno opta por não dizer
+  // nada, de propósito) — ver botão "Silêncio inicial" e a doutrina no backend, que
+  // reconhece esse padrão e reage à presença silenciosa sem inventar fala do aluno.
+  var MARCADOR_SILENCIO_INICIAL_ = '(o abordador opta por um momento de silêncio inicial — permanece presente, quieto e observando atentamente, sem dizer nada em voz alta)';
+
+  /** Trata a resposta (ou erro) de enviarFala/enviarFalaAudio — usada pelos três jeitos de falar (voz, texto, silêncio inicial). */
+  function processarRespostaOuErro_(promise) {
+    promise
+      .then(function (resp) {
+        if (resp.transcricaoAluno) adicionarBolha('aluno', resp.transcricaoAluno);
+        adicionarBolha('tentante', resp.fala);
+        falarComoTentante(resp.fala, function () {
+          atualizarStatus('🔊', 'Tentante falando...', true);
+        }, function () {
+          atualizarStatus('🎙️', 'Sua vez de falar', false);
+          definirPodeFalar_(true);
+        });
+        tratarDesfecho_(resp);
+      })
+      .catch(function (e) {
+        mostrarErroGenerico(e);
+        atualizarStatus('🎙️', 'Sua vez de falar', false);
+        definirPodeFalar_(true);
+      });
+  }
+
+  function realizarSilencioInicial() {
+    if (!casoAtual.sessionId || !podeFalarAgora_) return;
+    adicionarBolha('aluno', '🤐 (silêncio inicial)');
+    definirPodeFalar_(false);
+    atualizarStatus('⏳', 'Aguardando a reação do tentante...', false);
+    processarRespostaOuErro_(chamarServidor('enviarFala', casoAtual.sessionId, MARCADOR_SILENCIO_INICIAL_));
+  }
+
   function enviarFalaAudioGravado_(blob) {
     if (!casoAtual.sessionId) return;
     definirPodeFalar_(false);
@@ -871,23 +916,7 @@
     leitor.onload = function () {
       var base64 = String(leitor.result).split(',')[1] || '';
       var mimeType = blob.type || mimeTypeGravacao_ || 'audio/mp4';
-      chamarServidor('enviarFalaAudio', casoAtual.sessionId, base64, mimeType)
-        .then(function (resp) {
-          if (resp.transcricaoAluno) adicionarBolha('aluno', resp.transcricaoAluno);
-          adicionarBolha('tentante', resp.fala);
-          falarComoTentante(resp.fala, function () {
-            atualizarStatus('🔊', 'Tentante falando...', true);
-          }, function () {
-            atualizarStatus('🎙️', 'Sua vez de falar', false);
-            definirPodeFalar_(true);
-          });
-          tratarDesfecho_(resp);
-        })
-        .catch(function (e) {
-          mostrarErroGenerico(e);
-          atualizarStatus('🎙️', 'Sua vez de falar', false);
-          definirPodeFalar_(true);
-        });
+      processarRespostaOuErro_(chamarServidor('enviarFalaAudio', casoAtual.sessionId, base64, mimeType));
     };
     leitor.readAsDataURL(blob);
   }
@@ -1245,22 +1274,7 @@
     campo.value = '';
     definirPodeFalar_(false);
     atualizarStatus('⏳', 'Aguardando a reação do tentante...', false);
-    chamarServidor('enviarFala', casoAtual.sessionId, texto)
-      .then(function (resp) {
-        adicionarBolha('tentante', resp.fala);
-        falarComoTentante(resp.fala, function () {
-          atualizarStatus('🔊', 'Tentante falando...', true);
-        }, function () {
-          atualizarStatus('🎙️', 'Sua vez de falar', false);
-          definirPodeFalar_(true);
-        });
-        tratarDesfecho_(resp);
-      })
-      .catch(function (e) {
-        mostrarErroGenerico(e);
-        atualizarStatus('🎙️', 'Sua vez de falar', false);
-        definirPodeFalar_(true);
-      });
+    processarRespostaOuErro_(chamarServidor('enviarFala', casoAtual.sessionId, texto));
   }
 
   /**

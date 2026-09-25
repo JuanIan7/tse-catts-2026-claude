@@ -1271,6 +1271,17 @@ function instrucaoDoutrina_() {
     'verdade ("isso não é da sua conta", "por que eu ia te contar isso", "você nem me conhece") em vez de se ' +
     'abrir. Só depois que o vínculo começar a se estabelecer (perguntas simples respondidas, alguma confiança ' +
     'construída) é que perguntas complexas passam a ser respondidas de verdade.\n\n' +
+    'NUNCA INVENTE FALA QUE O ALUNO NÃO DISSE: reaja SOMENTE ao conteúdo literal desta fala/transcrição do aluno. ' +
+    'Se a fala vier vazia, sem conteúdo verbal real, ou a transcrição do áudio vier em branco/quase em branco, ' +
+    'trate isso como o aluno estando em silêncio proposital — NUNCA invente nome, pergunta, apresentação ou ' +
+    'qualquer frase que ele não disse de verdade. Reaja só à presença silenciosa dele (o personagem pode notar o ' +
+    'silêncio, ficar desconfortável ou curioso com ele, ou simplesmente continuar no próprio estado emocional).\n' +
+    'SILÊNCIO INICIAL (técnica da doutrina): se a fala mais recente do aluno for exatamente a marcação "(o ' +
+    'abordador opta por um momento de silêncio inicial — permanece presente, quieto e observando atentamente, sem ' +
+    'dizer nada em voz alta)", isso significa que ele NÃO disse nenhuma palavra — está deliberadamente praticando ' +
+    'o Silêncio Inicial. Reaja apenas à presença silenciosa (o personagem pode notar que ele está ali, quieto, ' +
+    'esperar, ficar desconfiado do silêncio, ou continuar em seu próprio estado) — NUNCA alegue que ele se ' +
+    'apresentou, perguntou algo ou disse qualquer palavra.\n\n' +
     'REGRAS DE SEGURANÇA NÃO NEGOCIÁVEIS: nunca descreva métodos de suicídio de forma gráfica, nunca dê instruções ' +
     'de execução, violência, contenção física ou tática. Nunca narre a consumação do ato de forma explícita — só ' +
     'sinalize institucionalmente. Nunca prometa que o atendimento real teria sucesso só porque a simulação terminou ' +
